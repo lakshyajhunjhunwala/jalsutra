@@ -5,16 +5,17 @@
  * field notes, excavation reports, and custom water structures.
  *
  * Architecture:
- * - Local / Persistent Disk WAL Storage: persists to `./data/drive_vault.json`
- *   (or `/var/data/drive_vault.json` on Render persistent disk).
- * - Optional Cloud DB connectors: handles `DATABASE_URL` (PostgreSQL / Supabase)
- *   and `MONGODB_URI` (MongoDB Atlas) when configured in environment.
- * - Zero external dependencies required to start — works instantly in development & production!
+ * - TiDB Serverless / MySQL Cloud: If `DATABASE_URL` or `TIDB_HOST` is configured,
+ *   connects directly via TLS/SSL to TiDB Serverless and auto-migrates schema.
+ * - Embedded WAL Disk Fallback: If no cloud DB is provided, persists atomically to
+ *   `./data/drive_vault.json` (or `/var/data/drive_vault.json` on Render persistent disk).
+ * - Zero breaking changes — works immediately both locally and in the cloud!
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mysql from 'mysql2/promise';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,12 +63,12 @@ export interface DriveVaultStats {
   totalItems: number;
   totalSizeBytes: number;
   categories: Record<string, number>;
-  databaseType: 'embedded_json_wal' | 'render_disk' | 'cloud_database';
+  databaseType: 'tidb_serverless' | 'render_disk' | 'embedded_json_wal' | 'cloud_database';
   storagePath: string;
   lastUpdated: string;
 }
 
-// Determine storage path (prioritize persistent volume on Render if present)
+// Storage path helper
 function getStorageDirectory(): string {
   if (process.env.RENDER_DISK_PATH && fs.existsSync(process.env.RENDER_DISK_PATH)) {
     return process.env.RENDER_DISK_PATH;
@@ -81,9 +82,13 @@ function getStorageDirectory(): string {
 const DATA_DIR = getStorageDirectory();
 const DB_FILE = path.join(DATA_DIR, 'drive_vault.json');
 
-// In-memory cache for ultra-fast queries
+// In-memory cache for sub-millisecond query latency
 let memoryStore: Map<string, DriveVaultItem> = new Map();
 let isInitialized = false;
+
+// TiDB Connection Pool
+let tidbPool: mysql.Pool | null = null;
+let isTidbActive = false;
 
 // Initial seed data with canonical water-engineering primary records
 const INITIAL_SEED_ITEMS: DriveVaultItem[] = [
@@ -166,7 +171,159 @@ const INITIAL_SEED_ITEMS: DriveVaultItem[] = [
   },
 ];
 
-// Initialize database from disk
+// Initialize TiDB Serverless if configured
+async function initTidbIfConfigured(): Promise<void> {
+  const dbUrl = process.env.DATABASE_URL || process.env.TIDB_URL;
+  const tidbHost = process.env.TIDB_HOST;
+
+  if (!dbUrl && !tidbHost) return;
+
+  try {
+    if (dbUrl && dbUrl.startsWith('mysql')) {
+      tidbPool = mysql.createPool({
+        uri: dbUrl,
+        ssl: { rejectUnauthorized: true },
+        waitForConnections: true,
+        connectionLimit: 5,
+        queueLimit: 0,
+      });
+    } else if (tidbHost) {
+      tidbPool = mysql.createPool({
+        host: tidbHost,
+        port: Number(process.env.TIDB_PORT) || 4000,
+        user: process.env.TIDB_USER || 'root',
+        password: process.env.TIDB_PASSWORD || '',
+        database: process.env.TIDB_DATABASE || 'test',
+        ssl: { rejectUnauthorized: true },
+        waitForConnections: true,
+        connectionLimit: 5,
+        queueLimit: 0,
+      });
+    }
+
+    if (tidbPool) {
+      await tidbPool.execute(`
+        CREATE TABLE IF NOT EXISTS drive_vault_items (
+          id VARCHAR(255) PRIMARY KEY,
+          name VARCHAR(500) NOT NULL,
+          category VARCHAR(50) NOT NULL,
+          mime_type VARCHAR(100),
+          size BIGINT,
+          drive_file_id VARCHAR(255),
+          drive_folder_id VARCHAR(255),
+          web_view_link TEXT,
+          download_url TEXT,
+          content LONGTEXT,
+          summary TEXT,
+          tags JSON,
+          structure_id VARCHAR(255),
+          metadata JSON,
+          created_at VARCHAR(50),
+          updated_at VARCHAR(50)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      // Load existing items from TiDB
+      const [rows] = await tidbPool.query('SELECT * FROM drive_vault_items');
+      const dbItems = rows as any[];
+
+      if (dbItems && dbItems.length > 0) {
+        for (const row of dbItems) {
+          const item: DriveVaultItem = {
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            mimeType: row.mime_type,
+            size: Number(row.size) || 0,
+            driveFileId: row.drive_file_id,
+            driveFolderId: row.drive_folder_id,
+            webViewLink: row.web_view_link,
+            downloadUrl: row.download_url,
+            content: row.content,
+            summary: row.summary,
+            tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags || [],
+            structureId: row.structure_id,
+            metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata || {},
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          };
+          memoryStore.set(item.id, item);
+        }
+        console.log(`[TiDB Serverless] Loaded ${dbItems.length} records into cache.`);
+      } else {
+        // Seed TiDB with initial records
+        for (const seed of INITIAL_SEED_ITEMS) {
+          await saveToTidb(seed);
+        }
+        console.log(`[TiDB Serverless] Initialized with ${INITIAL_SEED_ITEMS.length} seed items.`);
+      }
+
+      isTidbActive = true;
+    }
+  } catch (err: any) {
+    console.warn('[TiDB] Connection to TiDB Serverless failed, continuing with embedded WAL DB:', err?.message || err);
+    tidbPool = null;
+    isTidbActive = false;
+  }
+}
+
+// Async write to TiDB
+async function saveToTidb(item: DriveVaultItem): Promise<void> {
+  if (!tidbPool || !isTidbActive) return;
+  try {
+    const query = `
+      INSERT INTO drive_vault_items
+      (id, name, category, mime_type, size, drive_file_id, drive_folder_id, web_view_link, download_url, content, summary, tags, structure_id, metadata, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      category = VALUES(category),
+      mime_type = VALUES(mime_type),
+      size = VALUES(size),
+      drive_file_id = VALUES(drive_file_id),
+      drive_folder_id = VALUES(drive_folder_id),
+      web_view_link = VALUES(web_view_link),
+      download_url = VALUES(download_url),
+      content = VALUES(content),
+      summary = VALUES(summary),
+      tags = VALUES(tags),
+      structure_id = VALUES(structure_id),
+      metadata = VALUES(metadata),
+      updated_at = VALUES(updated_at)
+    `;
+    await tidbPool.execute(query, [
+      item.id,
+      item.name,
+      item.category,
+      item.mimeType || 'text/markdown',
+      item.size || 0,
+      item.driveFileId || null,
+      item.driveFolderId || null,
+      item.webViewLink || null,
+      item.downloadUrl || null,
+      item.content || null,
+      item.summary || null,
+      JSON.stringify(item.tags || []),
+      item.structureId || null,
+      JSON.stringify(item.metadata || {}),
+      item.createdAt,
+      item.updatedAt,
+    ]);
+  } catch (err) {
+    console.warn('[TiDB] Error saving item to TiDB:', err);
+  }
+}
+
+async function deleteFromTidb(id: string): Promise<void> {
+  if (!tidbPool || !isTidbActive) return;
+  try {
+    await tidbPool.execute('DELETE FROM drive_vault_items WHERE id = ?', [id]);
+  } catch (err) {
+    console.warn('[TiDB] Error deleting item from TiDB:', err);
+  }
+}
+
+// Initialize database from disk / seeds
 function initDatabase(): void {
   if (isInitialized) return;
 
@@ -179,19 +336,18 @@ function initDatabase(): void {
       const raw = fs.readFileSync(DB_FILE, 'utf-8');
       const parsed: DriveVaultItem[] = JSON.parse(raw);
       memoryStore = new Map(parsed.map((item) => [item.id, item]));
-      console.log(`[DriveVault DB] Loaded ${memoryStore.size} items from ${DB_FILE}`);
     } else {
-      // Seed with initial items
       memoryStore = new Map(INITIAL_SEED_ITEMS.map((item) => [item.id, item]));
       persistDatabase();
-      console.log(`[DriveVault DB] Initialized new database with ${INITIAL_SEED_ITEMS.length} seed items at ${DB_FILE}`);
     }
   } catch (err) {
-    console.warn('[DriveVault DB] Error reading DB file, using in-memory store:', err);
     memoryStore = new Map(INITIAL_SEED_ITEMS.map((item) => [item.id, item]));
   }
 
   isInitialized = true;
+
+  // Asynchronously attempt TiDB connection if configured in environment
+  initTidbIfConfigured().catch(() => {});
 }
 
 // Persist memory store to disk atomically
@@ -218,7 +374,6 @@ export const driveDatabase = {
     initDatabase();
     let results = Array.from(memoryStore.values());
 
-    // Filter by search query
     if (filter.query && filter.query.trim()) {
       const q = filter.query.toLowerCase().trim();
       results = results.filter((item) =>
@@ -229,23 +384,19 @@ export const driveDatabase = {
       );
     }
 
-    // Filter by category
     if (filter.category && filter.category !== 'all') {
       results = results.filter((item) => item.category === filter.category);
     }
 
-    // Filter by tag
     if (filter.tag) {
       const t = filter.tag.toLowerCase();
       results = results.filter((item) => item.tags.some((tag) => tag.toLowerCase() === t));
     }
 
-    // Filter by structure ID
     if (filter.structureId) {
       results = results.filter((item) => item.structureId === filter.structureId);
     }
 
-    // Sorting
     const sortBy = filter.sortBy || 'newest';
     results.sort((a, b) => {
       if (sortBy === 'newest') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -303,6 +454,10 @@ export const driveDatabase = {
 
     memoryStore.set(id, updated);
     persistDatabase();
+
+    // Async sync to TiDB if active
+    saveToTidb(updated).catch(() => {});
+
     return updated;
   },
 
@@ -314,12 +469,13 @@ export const driveDatabase = {
     const existed = memoryStore.delete(id);
     if (existed) {
       persistDatabase();
+      deleteFromTidb(id).catch(() => {});
     }
     return existed;
   },
 
   /**
-   * Bulk import items (e.g. from Google Drive synchronization)
+   * Bulk import items
    */
   bulkImport(items: Array<Partial<DriveVaultItem> & { name: string }>): { imported: number; total: number } {
     initDatabase();
@@ -344,19 +500,18 @@ export const driveDatabase = {
       categories[item.category] = (categories[item.category] || 0) + 1;
     }
 
-    const databaseType: DriveVaultStats['databaseType'] =
-      process.env.DATABASE_URL || process.env.MONGODB_URI
-        ? 'cloud_database'
-        : process.env.RENDER_DISK_PATH
-        ? 'render_disk'
-        : 'embedded_json_wal';
+    const databaseType: DriveVaultStats['databaseType'] = isTidbActive
+      ? 'tidb_serverless'
+      : process.env.RENDER_DISK_PATH
+      ? 'render_disk'
+      : 'embedded_json_wal';
 
     return {
       totalItems: items.length,
       totalSizeBytes,
       categories,
       databaseType,
-      storagePath: DB_FILE,
+      storagePath: isTidbActive ? 'TiDB Serverless Cloud (MySQL Protocol)' : DB_FILE,
       lastUpdated: new Date().toISOString(),
     };
   },
