@@ -180,8 +180,15 @@ async function initTidbIfConfigured(): Promise<void> {
 
   try {
     if (dbUrl && dbUrl.startsWith('mysql')) {
+      // In MySQL / TiDB Cloud, 'sys' is a system administrative schema.
+      // Auto-route /sys to /test (TiDB's default application database) if selected.
+      let normalizedUrl = dbUrl;
+      if (normalizedUrl.includes('/sys?') || normalizedUrl.endsWith('/sys')) {
+        normalizedUrl = normalizedUrl.replace(/\/sys(\?|$)/, '/test$1');
+      }
+
       tidbPool = mysql.createPool({
-        uri: dbUrl,
+        uri: normalizedUrl,
         ssl: { rejectUnauthorized: true },
         waitForConnections: true,
         connectionLimit: 5,
