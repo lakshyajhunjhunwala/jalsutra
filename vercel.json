@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://jalasutra-ancient-hydrology-api.onrender.com/api/:path*"
+      "destination": "https://jalsutra.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",

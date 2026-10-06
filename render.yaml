@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: jalasutra-ancient-hydrology-api
+    name: jalsutra
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm install
     startCommand: npm run start
     healthCheckPath: /api/health
     autoDeploy: true

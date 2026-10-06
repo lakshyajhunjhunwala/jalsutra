@@ -1964,10 +1964,52 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    });
+    const distPath = path.resolve(__dirname, 'dist');
+    const indexPath = path.resolve(distPath, 'index.html');
+
+    if (fs.existsSync(indexPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req, res) => {
+        res.sendFile(indexPath);
+      });
+    } else {
+      // Backend API mode (when frontend is hosted separately on Vercel)
+      app.get('/', (_req, res) => {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>JalaSutra API Engine</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FAF7F0; color: #2C2118; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+                .card { background: white; border: 1px solid #E2D8C8; border-radius: 12px; padding: 32px; max-width: 540px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; }
+                h1 { color: #8B3A1C; margin-top: 0; font-family: serif; }
+                .status { display: inline-block; padding: 4px 14px; background: #E3EFE5; color: #2E6B42; border: 1px solid #C2DFCA; border-radius: 999px; font-weight: 600; font-size: 13px; margin-bottom: 16px; }
+                code { background: #F5EFE3; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+                a { color: #8B3A1C; text-decoration: none; font-weight: 600; }
+              </style>
+            </head>
+            <body>
+              <div class="card">
+                <h1>🏛️ JalaSutra Ancient Hydrology API</h1>
+                <div class="status">✓ Render Backend Service is Live & Healthy</div>
+                <p>Backend API Engine powering Gemini 3.8 research dossiers, hydraulic simulations, and the dynamic database vault.</p>
+                <p style="font-size: 13px; color: #6E5A47;">Frontend application is hosted on <strong>Vercel</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #EDE4D5; margin: 20px 0;">
+                <p style="font-size: 13px;">Health Check: <a href="/api/health"><code>/api/health</code></a> | DB Stats: <a href="/api/drive/stats"><code>/api/drive/stats</code></a></p>
+              </div>
+            </body>
+          </html>
+        `);
+      });
+      app.get('*', (req, res) => {
+        if (req.path.startsWith('/api/')) {
+          return res.status(404).json({ error: `API route not found: ${req.path}` });
+        }
+        res.redirect('/');
+      });
+    }
   }
 
   // Pre-warm the in-memory cache with canonical historical dossiers
