@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+data/drive_vault.json
+data/drive_vault.json.tmp.*
