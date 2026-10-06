@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Remix Remix JalaSutra - Ancient Hydrology \u0026 Water Engineering Research Assistant",
+  "description": "Specialized AI research assistant and hydraulic engineering analyzer for ancient dams, reservoirs, irrigation networks, and Mauryan water management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and research preferences.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastActiveAt": { "type": "string" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A research conversation session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "roleId": { "type": "string" },
+        "messageCount": { "type": "number" }
+      },
+      "required": ["id", "title", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "An individual message within a research chat.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "chatId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "modelUsed": { "type": "string" },
+        "searchQueries": { "type": "array" },
+        "groundingSources": { "type": "array" }
+      },
+      "required": ["id", "chatId", "role", "content", "timestamp", "createdAt"]
+    },
+    "SearchHistoryItem": {
+      "title": "SearchHistoryItem",
+      "description": "A search inquiry performed by the researcher.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "query": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "query", "createdAt"]
+    },
+    "SavedDossier": {
+      "title": "SavedDossier",
+      "description": "Bookmarked archaeological dossier or research paper.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "dossierId": { "type": "string" },
+        "title": { "type": "string" },
+        "savedAt": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "dossierId", "title", "savedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Conversation threads isolated per user."
+    },
+    "/users/{userId}/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Ordered messages belonging to a conversation."
+    },
+    "/users/{userId}/search_history/{searchId}": {
+      "schema": "SearchHistoryItem",
+      "description": "Individual search query history records."
+    },
+    "/users/{userId}/saved_dossiers/{dossierId}": {
+      "schema": "SavedDossier",
+      "description": "Saved dossiers and research bookmarks."
+    }
+  }
+}

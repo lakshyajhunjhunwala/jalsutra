@@ -1,0 +1,123 @@
+[
+  {
+    "id": "seed-kallanai-grand-anicut",
+    "name": "Kallanai Grand Anicut — Civil Engineering Field Survey & Hydrology.md",
+    "category": "dossier",
+    "mimeType": "text/markdown",
+    "size": 34962,
+    "webViewLink": "https://asi.nic.in/epigraphical-publications/",
+    "tags": [
+      "Kallanai",
+      "Chola",
+      "Karikalan",
+      "Kaveri",
+      "Anicut",
+      "Hydrology"
+    ],
+    "structureId": "kallanai-grand-anicut",
+    "summary": "Comprehensive 39-section civil engineering and archaeological research dossier on the Grand Anicut.",
+    "metadata": {
+      "dynasty": "Early Chola (Karikalan)",
+      "location": "Thanjavur / Tiruchirappalli, Tamil Nadu",
+      "coordinates": "10.8306° N, 78.8197° E",
+      "constructionDate": "c. 1st–2nd Century CE",
+      "lengthMeters": 329,
+      "widthMeters": 20
+    },
+    "createdAt": "2026-10-06T10:15:40.355Z",
+    "updatedAt": "2026-10-06T10:15:40.356Z"
+  },
+  {
+    "id": "seed-sudarshana-epigraph-record",
+    "name": "Sudarshana Lake Dam — Junagadh Inscriptions & Maurya-Gupta Chronology.md",
+    "category": "excavation",
+    "mimeType": "text/markdown",
+    "size": 24500,
+    "webViewLink": "https://en.wikipedia.org/wiki/Junagadh_rock_inscription_of_Rudradaman",
+    "tags": [
+      "Sudarshana",
+      "Maurya",
+      "Rudradaman",
+      "Skandagupta",
+      "Girnar",
+      "Dam"
+    ],
+    "structureId": "sudarshana-lake-dam",
+    "summary": "Transcription and analysis of the Junagadh rock inscriptions detailing the 150 CE and 456 CE dam restorations.",
+    "metadata": {
+      "dynasty": "Maurya / Western Satraps / Gupta",
+      "location": "Junagadh (Girnar), Gujarat",
+      "coordinates": "21.5200° N, 70.4700° E",
+      "ruler": "Chandragupta Maurya, Ashoka, Rudradaman I, Skandagupta"
+    },
+    "createdAt": "2026-10-06T10:15:40.356Z",
+    "updatedAt": "2026-10-06T10:15:40.356Z"
+  },
+  {
+    "id": "seed-dholavira-reservoirs",
+    "name": "Dholavira Harappan Water Harvesting Architecture — ASI Monograph.md",
+    "category": "dossier",
+    "mimeType": "text/markdown",
+    "size": 28400,
+    "webViewLink": "https://asi.nic.in/excavation-in-dholavira/",
+    "tags": [
+      "Dholavira",
+      "Harappan",
+      "Indus Valley",
+      "Check Dams",
+      "Reservoirs"
+    ],
+    "structureId": "dholavira-reservoirs",
+    "summary": "Excavation reports by Dr. R.S. Bisht on the 16 interconnected masonry reservoirs and seasonal stream bunds on Mansar and Manhar.",
+    "metadata": {
+      "period": "Mature Harappan (c. 2600–1900 BCE)",
+      "location": "Khadir Island, Kutch, Gujarat",
+      "coordinates": "23.8860° N, 70.2130° E",
+      "excavator": "Dr. R.S. Bisht, ASI"
+    },
+    "createdAt": "2026-10-06T10:15:40.356Z",
+    "updatedAt": "2026-10-06T10:15:40.356Z"
+  },
+  {
+    "id": "seed-porumamilla-treatise",
+    "name": "Porumamilla Inscription of 1369 CE — The 12 Prerequisites & 6 Fatal Flaws.md",
+    "category": "note",
+    "mimeType": "text/markdown",
+    "size": 16800,
+    "webViewLink": "https://www.jstor.org/stable/25193047",
+    "tags": [
+      "Porumamilla",
+      "Epigraphy",
+      "Sadhana",
+      "Dosha",
+      "Dam Engineering",
+      "Vijayanagara"
+    ],
+    "summary": "Codification of ancient Indian dam engineering standards: 12 Sadhanas (essential requirements) and 6 Doshas (fatal rejection criteria).",
+    "metadata": {
+      "year": "1369 CE",
+      "epigraph": "Epigraphia Indica Vol. XIV",
+      "patron": "Prince Bhaskara Bhavadura (Bukkaraya I)",
+      "location": "Kadapa District, Andhra Pradesh"
+    },
+    "createdAt": "2026-10-06T10:15:40.356Z",
+    "updatedAt": "2026-10-06T10:15:40.356Z"
+  },
+  {
+    "id": "doc-1791281805675-7494bi",
+    "name": "Bhojpur_Cyclopean_Dam_Excavation_Field_Data.md",
+    "category": "excavation",
+    "mimeType": "text/markdown",
+    "size": 145,
+    "content": "# Bhojpur Cyclopean Dam Field Records\\n\\n- Embankment length: 87m\\n- Stone masonry: dressed sandstone blocks\\n- Puddle clay core: bhal compaction",
+    "tags": [
+      "Bhojpur",
+      "Paramara",
+      "Dam",
+      "Excavation"
+    ],
+    "metadata": {},
+    "createdAt": "2026-10-06T10:16:45.675Z",
+    "updatedAt": "2026-10-06T10:16:45.675Z"
+  }
+]

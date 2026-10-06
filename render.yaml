@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: jalasutra-ancient-hydrology-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000
