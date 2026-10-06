@@ -4,6 +4,7 @@ import { Layers, Loader2, Compass, Check, Search, ShieldCheck, ExternalLink } fr
 import { MarkdownRenderer } from './MarkdownRenderer.tsx';
 import { SaveToDriveButton } from './SaveToDriveButton.tsx';
 import { exportComparisonToDrive, exportComparativeMatrixTableToDrive } from '../services/googleDriveService.ts';
+import { getApiUrl } from '../services/apiConfig.ts';
 
 export const ComparativeTool: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([
@@ -37,7 +38,7 @@ export const ComparativeTool: React.FC = () => {
 
     try {
       const names = selectedDossiers.map(d => `${d.name} (${d.region}, ${d.period})`);
-      const res = await fetch('/api/compare', {
+      const res = await fetch(getApiUrl('/api/compare'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ structures: names }),

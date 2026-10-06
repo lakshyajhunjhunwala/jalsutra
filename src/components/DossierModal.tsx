@@ -28,6 +28,7 @@ import { SaveToDriveButton } from './SaveToDriveButton.tsx';
 import { exportResearchDossierToDrive } from '../services/googleDriveService.ts';
 import { saveDossierBookmark, removeSavedDossier, getSavedDossiers } from '../services/savedDossierService.ts';
 import { onUserAuthStateChanged, JalaSutraUser } from '../services/firebase.ts';
+import { getApiUrl } from '../services/apiConfig.ts';
 
 interface DossierModalProps {
   dossier: ArchaeologicalDossier | null;
@@ -82,7 +83,7 @@ export const DossierModal: React.FC<DossierModalProps> = ({ dossier, onClose, on
     setSearchGroundingLoading(true);
     setShowSearchGrounding(true);
     try {
-      const res = await fetch('/api/search-grounding', {
+      const res = await fetch(getApiUrl('/api/search-grounding'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

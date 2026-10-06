@@ -750,8 +750,8 @@ async function generateWithResilience({
       try {
         debugLog('Attempting model:', model, 'hasTools:', hasTools);
 
-        // Fast timeout: 503 errors fail instantly; only real hangs waste time here
-        const timeoutMs = hasTools ? 3000 : 20000;
+        // High-responsiveness timeout: 8s for live search grounding, 12s for standard generation
+        const timeoutMs = hasTools ? 8000 : 12000;
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Timeout on ${model} (${timeoutMs}ms)`)), timeoutMs)
         );

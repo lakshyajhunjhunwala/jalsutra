@@ -3,6 +3,8 @@
  * Handles authentication, folder management, file uploads, listing, reading, and deletion.
  */
 
+import { getApiUrl } from './apiConfig.ts';
+
 export interface DriveUser {
   name: string;
   email: string;
@@ -1000,8 +1002,8 @@ export function deleteLocalArchiveFile(fileId: string) {
 
 export async function fetchDatabaseVaultFiles(searchQuery?: string): Promise<DriveFileItem[]> {
   try {
-    const url = searchQuery ? `/api/drive/items?query=${encodeURIComponent(searchQuery)}` : '/api/drive/items';
-    const res = await fetch(url);
+    const path = searchQuery ? `/api/drive/items?query=${encodeURIComponent(searchQuery)}` : '/api/drive/items';
+    const res = await fetch(getApiUrl(path));
     if (!res.ok) return [];
     const data = await res.json();
     return (data.items || []).map((dbItem: any) => ({
@@ -1022,7 +1024,7 @@ export async function fetchDatabaseVaultFiles(searchQuery?: string): Promise<Dri
 
 export async function saveToDatabaseVault(file: DriveFileItem): Promise<void> {
   try {
-    await fetch('/api/drive/items', {
+    await fetch(getApiUrl('/api/drive/items'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1043,7 +1045,7 @@ export async function saveToDatabaseVault(file: DriveFileItem): Promise<void> {
 
 export async function deleteFromDatabaseVault(fileId: string): Promise<void> {
   try {
-    await fetch(`/api/drive/items/${fileId}`, { method: 'DELETE' });
+    await fetch(getApiUrl(`/api/drive/items/${fileId}`), { method: 'DELETE' });
   } catch (e) {}
 }
 
@@ -1054,7 +1056,7 @@ export async function fetchDatabaseVaultStats(): Promise<{
   databaseType: string;
 } | null> {
   try {
-    const res = await fetch('/api/drive/stats');
+    const res = await fetch(getApiUrl('/api/drive/stats'));
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {

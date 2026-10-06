@@ -41,6 +41,7 @@ import {
   clearSearchHistory,
 } from '../services/searchHistoryService.ts';
 import { WaterEngineeringTimeline } from './WaterEngineeringTimeline.tsx';
+import { getApiUrl } from '../services/apiConfig.ts';
 
 export interface GroundingCitation {
   title: string;
@@ -369,7 +370,7 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
     setGroundingSources([]);
 
     try {
-      const res = await fetch('/api/research', {
+      const res = await fetch(getApiUrl('/api/research'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

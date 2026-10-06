@@ -32,6 +32,7 @@ import {
 import { StructureSchematic } from './StructureSchematic.tsx';
 import { SaveToDriveButton } from './SaveToDriveButton.tsx';
 import { uploadFileToDrive } from '../services/googleDriveService.ts';
+import { getApiUrl } from '../services/apiConfig.ts';
 
 export interface StructureSnapshot {
   id: string;
@@ -177,7 +178,7 @@ export const DynamicDamSimulator: React.FC = () => {
     // Call backend structure-identify for unknown/uncataloged query
     try {
       setLoadingStage('Consulting AI Epigraphic Historian...');
-      const res = await fetch('/api/structure-identify', {
+      const res = await fetch(getApiUrl('/api/structure-identify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q }),

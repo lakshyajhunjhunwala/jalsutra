@@ -61,6 +61,7 @@ import {
   deleteSearchRecord,
   clearSearchHistory,
 } from '../services/searchHistoryService.ts';
+import { getApiUrl } from '../services/apiConfig.ts';
 
 export interface ChatMessage {
   id: string;
@@ -438,7 +439,7 @@ Choose your specialist persona, enable Google Search Grounding for live citation
         text: m.text,
       }));
 
-      const res = await fetch('/api/chat', {
+      const res = await fetch(getApiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -504,7 +505,7 @@ Choose your specialist persona, enable Google Search Grounding for live citation
 
     try {
       setPlayingMessageId(messageId);
-      const res = await fetch('/api/live/tts', {
+      const res = await fetch(getApiUrl('/api/live/tts'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: 'Zephyr' }),
