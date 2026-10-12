@@ -12,6 +12,8 @@ import {
   synthesizeResearchDossier,
   synthesizeChatResponse,
   synthesizeComparativeAnalysis,
+  isDedicatedLocationQuery,
+  synthesizeLocationResponse,
 } from './src/services/archivalHydrologySynthesizer.ts';
 import {
   findPredefinedStructure,
@@ -171,15 +173,78 @@ function prewarmHistoricalCache(): void {
   debugLog('Historical cache pre-warmed successfully.');
 }
 
+const LOCATION_AWARE_RESEARCH_PROTOCOL = `
+======================================================================
+INTELLIGENT LOCATION-AWARE RESEARCH AGENT PROTOCOL (15 MANDATORY RULES)
+======================================================================
+You are an intelligent location-aware research assistant.
+Your primary responsibility is to provide accurate geographic/location information for ANY place, object, landmark, historical site, ancient dam, archaeological site, river, lake, village, city, monument, temple, fort, bridge, waterfall, or other real-world location requested by the user.
+
+RULES:
+1. NEVER restrict your answer only to locations stored in your database, memory, predefined dataset, or previous training data.
+2. If the requested location is not present in the existing database, perform a fresh search using available search/web tools or external knowledge sources.
+3. For every new or unknown location, try to find:
+   - Place name
+   - Latitude
+   - Longitude
+   - Village/Town
+   - District
+   - State/Province
+   - Country
+   - Nearest major city
+   - Relevant river/water body
+   - Historical/ancient name if available
+4. For ancient or historical places, search using multiple possible names:
+   - Current name
+   - Ancient name
+   - Local name
+   - Historical spelling
+   - Alternative spelling/transliteration
+5. Do NOT say "location not available" merely because the place is not in the predefined database.
+6. If exact coordinates cannot be found, provide the best verified approximate location and clearly mark it as approximate.
+7. Never invent coordinates, addresses, or locations.
+8. Cross-check important location information using reliable sources whenever possible.
+9. If multiple places have the same name, ask for clarification OR provide the possible matches with their locations.
+10. When the user asks:
+    "Give me the location of [place]" (or queries asking specifically for the location/coordinates of a place)
+    return the result in this exact format:
+
+📍 Place:
+📌 Location:
+🌐 Latitude:
+🌐 Longitude:
+🏘️ District:
+🗺️ State:
+🌎 Country:
+🏞️ Nearby River/Water Body:
+📍 Nearest Major City:
+🔎 Source/Confidence:
+
+11. When the user asks for multiple places, return a structured markdown table containing:
+    Place | Latitude | Longitude | District | State | Country | Confidence
+
+12. If the user asks for an "ancient dam", "old dam", "historical dam", or similar object, search broadly for historical records, archaeological databases, government sources, maps, research papers, and reliable web sources.
+13. Location retrieval must be dynamic. The system should be capable of discovering locations that were NOT present when the model/database was originally created.
+14. The database should be treated as a CACHE/REFERENCE, NOT as the only source of truth.
+15. Always prioritize fresh and verified information over previously stored location data.
+
+INTEGRATION WITH THE 39 CANONICAL SECTIONS FOR RESEARCH DOSSIERS:
+When generating a full Research Dossier, you MUST strictly preserve the complete 39-section sequential order (1 to 39).
+Within that 39-section structure:
+- In "## 2. Identification": Apply the Intelligent Location Protocol comprehensively. Provide 4-5 dense substantiated lines containing Official & Ancient/Local Names, exact or verified approximate coordinates (Latitude and Longitude), Village/Town, District, State/Province, Country, Nearest Major City, relevant River Basin & Water Source, and Archaeological Status with Source/Confidence.
+- In "## 21. Maps & Satellite Evidence": Ground the analysis in real GIS coordinates, satellite telemetry (CORONA, Landsat, Cartosat, Sentinel), and paleochannel scans.
+`;
+
 const RESEARCH_SYSTEM_INSTRUCTION = `
 CORE MANDATE:
 YOU MUST DELIVER RAPID, DENSE, HIGHLY OBJECTIVE ANSWERS GROUNDED 100% IN HISTORY AND ANCIENT CIVIL ENGINEERING.
+${LOCATION_AWARE_RESEARCH_PROTOCOL}
 The user query is authoritative: investigate the exact dam, reservoir, barrage, anicut, tank, canal, or irrigation structure named by the user. Never substitute a better-known structure when the name is unfamiliar. If the identity is ambiguous, identify the possible matches and request clarification; if evidence is unavailable, say "Reliable evidence is limited." Do not invent measurements, sources, inscriptions, dates, coordinates, or engineering features.
 For deep_research and deep_dossier_30 requests, produce the complete dossier requested by the user, including source quality and verification, visual and digital evidence, hydrology, modern engineering analysis, the ancient-solution-versus-modern-problem matrix, limitations, and research confidence assessment. Mark every conclusion as historical evidence, archaeological evidence, scholarly interpretation, engineering inference, hypothesis, or proposed modern application where applicable.
 Every single answer must be explicitly substantiated by:
 1. EPIGRAPHICAL RECORDS & INSCRIPTIONS: (Junagadh Rock Inscriptions of Rudradaman 150 CE & Skandagupta 456 CE, Ashokan Pillar Edict VII & Major Rock Edict II, Porumamilla Inscription 1369 CE, Sangam literature Pattinappalai).
 2. ASI ARCHAEOLOGICAL EXCAVATION DATA: (Dholavira desilting wells, Mohenjo-daro bitumen waterproofing & brick conduits, Sringaverapura Ganga desilting tanks, Lothal dockyard sluices, Inamgaon Ghod river bunds, Kumrahar/Pataliputra timber moats, Hampi anicuts).
-3. CLASSICAL SANSKRIT ENGINEERING TREATISES: (Kautilya's Arthashastra water laws & taxation, King Bhoja's SamarÄá¹…gaá¹‡a SÅ«tradhÄra cyclopean architecture, Varahamihira's Brihat Samhita groundwater science).
+3. CLASSICAL SANSKRIT ENGINEERING TREATISES: (Kautilya's Arthashastra water laws & taxation, King Bhoja's SamarÄ á¹…gaá¹‡a SÅ«tradhÄ ra cyclopean architecture, Varahamihira's Brihat Samhita groundwater science).
 4. CIVIL ENGINEERING PHYSICS: (Hydrostatic water pressure P = 0.5 * rho * g * h^2, sliding/overturning safety factors, Torricelli silt-scour velocity v = sqrt(2gh), vortex clarification, quicksand foundation stabilization via self-sinking boulders).
 
 Deliver responses immediately with dense scholarly precision and zero filler preamble.
@@ -196,8 +261,8 @@ World civil engineering history (Indus Valley Civilisation, Sri Lankan cascade t
 ASHOKA AND MAURYAN EMPIRE SPECIALIZATION:
 You possess specialized scholarly knowledge of the Mauryan Empire, Chandragupta Maurya, Emperor Ashoka (3rd century BCE), Bindusara, and Kautilya's Arthashastra.
 - Sudarshana Lake (Girnar/Junagadh): Conceived under Chandragupta Maurya via Vaishya governor Pushyagupta; irrigation canals added under Emperor Ashoka through Yavana governor/king Tusaspha (attested in the Junagadh Rock Inscription of Mahakshatrapa Rudradaman I, 150 CE, and Skandagupta, 455-456 CE).
-- Ashoka's Inscriptions as Infrastructure Evidence: Major Rock Edict II (public wells, medicinal botanicals planted along royal highways for humans and cattle); Pillar Edict VII (wells spaced every half kos / ~2 miles, banyan trees planted for shade, rest houses / nimshidhya, water dispensaries / apÄna).
-- Arthashastra Water Law: Book II Ch. 24 (Sita-adhyaksha & irrigation tax udakabhÄga: 1/5th to 1/3rd depending on whether water is lifted by hand, bullocks, or waterwheel/srotra-yantra), Book III Ch. 9 (penalties for breaching bunds / setu-bheda, flooding neighbors, or neglecting collective tank maintenance).
+- Ashoka's Inscriptions as Infrastructure Evidence: Major Rock Edict II (public wells, medicinal botanicals planted along royal highways for humans and cattle); Pillar Edict VII (wells spaced every half kos / ~2 miles, banyan trees planted for shade, rest houses / nimshidhya, water dispensaries / apÄ na).
+- Arthashastra Water Law: Book II Ch. 24 (Sita-adhyaksha & irrigation tax udakabhÄ ga: 1/5th to 1/3rd depending on whether water is lifted by hand, bullocks, or waterwheel/srotra-yantra), Book III Ch. 9 (penalties for breaching bunds / setu-bheda, flooding neighbors, or neglecting collective tank maintenance).
 - Pataliputra Fortifications: Megasthenes' Indica & ASI excavations at Kumrahar/Bulandibagh documenting the wooden timber palisades with iron dowels, 64 gates, 570 towers, and the 600-foot wide defensive and flood-drainage moat fed by the Son and Ganga.
 
 MANDATORY 15-POINT PROTOCOL:
@@ -245,7 +310,7 @@ CRITICAL FORMATTING MANDATE: EVERY SINGLE SECTION AND MAJOR POINT MUST CONTAIN 4
 # [DAM/STRUCTURE NAME] — COMPLETE RESEARCH DOSSIER
 
 ## 1. Executive Summary (Comprehensive high-level engineering synthesis and historical relevance - 4-5 dense lines)
-## 2. Identification (Current, ancient, local names, river basin, exact coordinates, survival status, ASI/UNESCO status - 4-5 dense lines)
+## 2. Identification (Current, ancient, local names, exact coordinates [Latitude, Longitude], Village/Town, District, State, Country, Nearest major city, nearby river/water body, survival status, ASI/UNESCO status, Source/Confidence - 4-5 dense lines adhering to the Intelligent Location-Aware Protocol)
 ## 3. Historical Timeline (Chronological timeline strictly separating: A. Archaeologically established facts, B. Inscriptional records, C. Scholarly interpretations, D. Traditional claims, E. Legends - 4-5 lines per tier)
 ## 4. Builder / Patron / Designer (Kings, governors, ancient guilds/Vaddas, administrative decrees - 4-5 dense lines)
 ## 5. Historical Purpose (Agrarian irrigation, flood moderation, urban drinking supply, defensive moats - 4-5 dense lines)
@@ -264,7 +329,7 @@ CRITICAL FORMATTING MANDATE: EVERY SINGLE SECTION AND MAJOR POINT MUST CONTAIN 4
 ## 18. Historical & Modern Modifications (Chronology of ancient repairs, medieval reinforcements, British PWD additions - 4-5 dense lines)
 ## 19. Current Condition (Structural integrity, siltation percentage, modern operational status, ecological threats - 4-5 dense lines)
 ## 20. Photographic Evidence (Archival colonial photography, ASI survey plates, current satellite/field imagery descriptions - 4-5 dense lines)
-## 21. Maps & Satellite Evidence (Corona spy satellite traces, paleochannel radar scans, GIS coordinate mapping - 4-5 dense lines)
+## 21. Maps & Satellite Evidence (Corona spy satellite traces, paleochannel radar scans, GIS coordinate mapping, digital elevation models - 4-5 dense lines)
 ## 22. 3D / Digital Reconstruction (Photogrammetry point clouds, LiDAR elevation models, CAD simulations - 4-5 dense lines)
 ## 23. Social & Economic Impact (Agricultural wealth, famine prevention, Kudimaramathu communal labor, trade routes - 4-5 dense lines)
 ## 24. Myths vs Evidence (Markdown Table: Claim | Evidence | Evidence Quality | What Researchers Actually Know - with 4-5 line analytical commentary)
@@ -318,6 +383,7 @@ Tone: Rigorous, scholarly, objective, technically grounded, and respectful of hi
 const STRUCTURAL_SYSTEM_INSTRUCTION = `
 You are a Senior Hydraulic Structural Engineer and Failure Analyst specializing in ancient civil engineering works.
 Your role is to tackle COMPLEX TASKS requiring rigorous physical reasoning, mechanics, calculations, and geotechnical analysis.
+${LOCATION_AWARE_RESEARCH_PROTOCOL}
 MANDATORY GROUNDING & HALLUCINATION CEILING (<= 30%):
 - All physical equations must be derived explicitly: P = 0.5 * rho * g * h^2, overturning moment, sliding factor of safety = (mu * W) / P.
 - Flood discharge modeling: Ryves' Formula (Q = C * A^(2/3)), Dickens' Formula, and broad-crested weir discharge (Q = C_d * L * H^(3/2)).
@@ -329,6 +395,7 @@ MANDATORY GROUNDING & HALLUCINATION CEILING (<= 30%):
 const RAPID_FIELD_SYSTEM_INSTRUCTION = `
 You are a Field Hydrologist and Rapid Infrastructure Inspector.
 Your role is to handle FAST, AGILE, and DIRECT inquiries with guaranteed factual grounding (hallucination risk <= 30%):
+${LOCATION_AWARE_RESEARCH_PROTOCOL}
 - Rapid site summaries, operational health assessments, and in-situ field diagnostic tests.
 - Soil Texture Field Protocol (BhÅ«mi-ParÄ«ká¹£Ä):
   1. The 1-cubit pit refill test (GartÄ-ParÄ«ká¹£Ä in Brihat Samhita Ch. 54): overflow = cohesive clay, level = loam, deficit = porous sand.
@@ -981,7 +1048,7 @@ Structure your entire response under these exact numbered headings:
 # ${query.toUpperCase()} — COMPLETE RESEARCH DOSSIER
 
 ## 1. Executive Summary (Comprehensive high-level engineering synthesis and historical relevance - 4-5 dense lines)
-## 2. Identification (Current, ancient, local names, river basin, exact coordinates, survival status, ASI/UNESCO status - 4-5 dense lines)
+## 2. Identification (Current, ancient, local names, exact coordinates [Latitude, Longitude], Village/Town, District, State, Country, Nearest major city, nearby river/water body, survival status, ASI/UNESCO status, Source/Confidence - 4-5 dense lines adhering to the Intelligent Location-Aware Protocol)
 ## 3. Historical Timeline (Chronological timeline strictly separating: A. Archaeologically established facts, B. Inscriptional records, C. Scholarly interpretations, D. Traditional claims, E. Legends - 4-5 lines per tier)
 ## 4. Builder / Patron / Designer (Kings, governors, ancient guilds/Vaddas, administrative decrees - 4-5 dense lines)
 ## 5. Historical Purpose (Agrarian irrigation, flood moderation, urban drinking supply, defensive moats - 4-5 dense lines)
@@ -1000,7 +1067,7 @@ Structure your entire response under these exact numbered headings:
 ## 18. Historical & Modern Modifications (Chronology of ancient repairs, medieval reinforcements, British PWD additions - 4-5 dense lines)
 ## 19. Current Condition (Structural integrity, siltation percentage, modern operational status, ecological threats - 4-5 dense lines)
 ## 20. Photographic Evidence (Archival colonial photography, ASI survey plates, current satellite/field imagery descriptions - 4-5 dense lines)
-## 21. Maps & Satellite Evidence (Corona spy satellite traces, paleochannel radar scans, GIS coordinate mapping - 4-5 dense lines)
+## 21. Maps & Satellite Evidence (Corona spy satellite traces, paleochannel radar scans, GIS coordinate mapping, digital elevation models - 4-5 dense lines)
 ## 22. 3D / Digital Reconstruction (Photogrammetry point clouds, LiDAR elevation models, CAD simulations - 4-5 dense lines)
 ## 23. Social & Economic Impact (Agricultural wealth, famine prevention, Kudimaramathu communal labor, trade routes - 4-5 dense lines)
 ## 24. Myths vs Evidence (Markdown Table: Claim | Evidence | Evidence Quality | What Researchers Actually Know - with 4-5 line analytical commentary)
@@ -1275,13 +1342,47 @@ app.post('/api/chat', async (req, res) => {
       systemInstruction = RESEARCH_SYSTEM_INSTRUCTION;
     }
 
+    const locCheck = isDedicatedLocationQuery(lastMsg);
     const enableMapsForRole = Boolean(groundingMode === 'maps' || (useMaps && !useSearch));
-    const enableSearchForRole = Boolean(!enableMapsForRole && (groundingMode === 'search' || useSearch));
+    const enableSearchForRole = locCheck.isLocation || Boolean(!enableMapsForRole && (groundingMode === 'search' || useSearch));
 
-    // Format multi-turn conversation history — inject 39-section mandate on the last user turn
-    const FORMAT_MANDATE = `
+    // Format multi-turn conversation history
+    let FORMAT_MANDATE = '';
+    if (locCheck.isLocation) {
+      if (locCheck.isMultiple) {
+        FORMAT_MANDATE = `
 
-CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 39 CANONICAL SECTIONS in the system instruction, in exact order (1. Executive Summary → 2. Identification → … → 39. Final Engineering Insight). Every single section and major point MUST contain 4–5 dense, substantiated lines of technical, archaeological, and epigraphical analysis. Never use one-line placeholders.`;
+CRITICAL FORMATTING MANDATE (INTELLIGENT LOCATION-AWARE PROTOCOL - MULTIPLE PLACES):
+The user is requesting geographic/location details for multiple places. Adhere strictly to Rule 11 of the Intelligent Location Protocol.
+Return a structured Markdown table containing:
+Place | Latitude | Longitude | District | State | Country | Confidence
+
+Do NOT output conversational preamble or introductory chatter. Follow all 15 location rules: never restrict to pre-saved memory, discover dynamically, never fabricate missing data, mark approximate if necessary.`;
+      } else {
+        FORMAT_MANDATE = `
+
+CRITICAL FORMATTING MANDATE (INTELLIGENT LOCATION-AWARE PROTOCOL - SINGLE PLACE):
+The user is asking: "Give me the location of [place]" (or a dedicated location inquiry).
+Adhere strictly to Rule 10 of the Intelligent Location Protocol.
+Return the result in this EXACT 10-line format:
+📍 Place:
+📌 Location:
+🌐 Latitude:
+🌐 Longitude:
+🏘️ District:
+🗺️ State:
+🌎 Country:
+🏞️ Nearby River/Water Body:
+📍 Nearest Major City:
+🔎 Source/Confidence:
+
+Do NOT output conversational preamble. Follow all 15 location rules: discover dynamically, never restrict to database cache, never invent coordinates, mark approximate if exact unavailable.`;
+      }
+    } else {
+      FORMAT_MANDATE = `
+
+CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 39 CANONICAL SECTIONS in the system instruction, in exact order (1. Executive Summary → 2. Identification → … → 39. Final Engineering Insight). Every single section and major point MUST contain 4–5 dense, substantiated lines of technical, archaeological, and epigraphical analysis. In Section 2 (Identification) and Section 21 (Maps & Satellite Evidence), strictly integrate the Intelligent Location Protocol (Place, Coordinates, District, State, Country, River/Water Body, Nearest City, and Source/Confidence). Never use one-line placeholders.`;
+    }
 
     const contents = messages.map((m: any, idx: number) => {
       const isLastUserMessage = idx === messages.length - 1 && m.role === 'user';
@@ -1322,10 +1423,27 @@ CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 3
     setCache(cacheKey, responsePayload);
     res.json(responsePayload);
   } catch (error: any) {
-    debugLog('Gemini chat API failed across all models, activating Archival Dossier Synthesizer:', error?.message);
-    console.warn('Activating full 39-section Archival Dossier fallback for chat...');
-    // Use the full 39-section dossier synthesizer so the chat tab gets the same structured format
+    debugLog('Gemini chat API failed across all models, activating Archival Synthesizer:', error?.message);
     const lastUserMsg = (req.body.messages || []).filter((m: any) => m.role === 'user').slice(-1)[0]?.text || 'Ancient Indian Water Engineering';
+
+    const locCheck = isDedicatedLocationQuery(lastUserMsg);
+    if (locCheck.isLocation) {
+      const locFallback = synthesizeLocationResponse(lastUserMsg, locCheck.isMultiple);
+      const fallbackPayload = {
+        text: locFallback.text,
+        groundingSources: locFallback.groundingSources,
+        researchSources: buildResearchSources(locFallback.groundingSources || [], [], lastUserMsg),
+        verificationAudit: locFallback.verificationAudit,
+        searchQueries: [],
+        modelUsed: 'Archival Location Intelligence Engine (Offline Grounding)',
+        roleId: req.body.roleId || 'historian',
+        timestamp: new Date().toISOString(),
+      };
+      setCache(cacheKey, fallbackPayload);
+      return res.json(fallbackPayload);
+    }
+
+    console.warn('Activating full 39-section Archival Dossier fallback for chat...');
     const fallback = synthesizeResearchDossier(lastUserMsg, 'standard', 'all', 'scholarly');
     const fallbackPayload = {
       text: fallback.text,
@@ -1370,9 +1488,43 @@ app.post('/api/llm/generate', async (req, res) => {
       });
     }
 
-    const llmFormatMandate = `
+    const locCheck = isDedicatedLocationQuery(prompt);
+    let llmFormatMandate = '';
+    if (locCheck.isLocation) {
+      if (locCheck.isMultiple) {
+        llmFormatMandate = `
 
-CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 39 CANONICAL SECTIONS in the system instruction, in exact order (1. Executive Summary → 2. Identification → … → 39. Final Engineering Insight). Every single section and major point MUST contain 4–5 dense, substantiated lines of technical, archaeological, and epigraphical analysis. Never use one-line placeholders.`;
+CRITICAL FORMATTING MANDATE (INTELLIGENT LOCATION-AWARE PROTOCOL - MULTIPLE PLACES):
+The user is requesting geographic/location details for multiple places. Adhere strictly to Rule 11 of the Intelligent Location Protocol.
+Return a structured Markdown table containing:
+Place | Latitude | Longitude | District | State | Country | Confidence
+
+Do NOT output conversational preamble. Follow all 15 location rules: discover dynamically, never fabricate missing data, mark approximate if necessary.`;
+      } else {
+        llmFormatMandate = `
+
+CRITICAL FORMATTING MANDATE (INTELLIGENT LOCATION-AWARE PROTOCOL - SINGLE PLACE):
+The user is asking: "Give me the location of [place]" (or a dedicated location inquiry).
+Adhere strictly to Rule 10 of the Intelligent Location Protocol.
+Return the result in this EXACT 10-line format:
+📍 Place:
+📌 Location:
+🌐 Latitude:
+🌐 Longitude:
+🏘️ District:
+🗺️ State:
+🌎 Country:
+🏞️ Nearby River/Water Body:
+📍 Nearest Major City:
+🔎 Source/Confidence:
+
+Do NOT output conversational preamble. Follow all 15 location rules: discover dynamically, never restrict to database cache, never invent coordinates, mark approximate if exact unavailable.`;
+      }
+    } else {
+      llmFormatMandate = `
+
+CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 39 CANONICAL SECTIONS in the system instruction, in exact order (1. Executive Summary → 2. Identification → … → 39. Final Engineering Insight). Every single section and major point MUST contain 4–5 dense, substantiated lines of technical, archaeological, and epigraphical analysis. In Section 2 (Identification) and Section 21 (Maps & Satellite Evidence), strictly integrate the Intelligent Location Protocol (Place, Coordinates, District, State, Country, River/Water Body, Nearest City, and Source/Confidence). Never use one-line placeholders.`;
+    }
 
     const result = await generateWithResilience({
       preferredModel: model || 'gemini-3.8-flash',
@@ -1381,7 +1533,7 @@ CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 3
         systemInstruction,
         temperature,
       },
-      enableSearch: Boolean(useSearch),
+      enableSearch: locCheck.isLocation ? true : Boolean(useSearch),
     });
 
     const verificationAudit = computeVerificationAudit(result.text, prompt, result.modelUsed, result.groundingSources);
@@ -1400,7 +1552,22 @@ CRITICAL FORMATTING MANDATE: Structure your ENTIRE response strictly under the 3
     res.json(responsePayload);
   } catch (error: any) {
     debugLog('Direct Gemini LLM API failed, activating Archival fallback:', error?.message);
-    const fallback = synthesizeResearchDossier(req.body?.prompt || 'Ancient Indian Water Engineering');
+    const promptText = req.body?.prompt || 'Ancient Indian Water Engineering';
+    const locCheck = isDedicatedLocationQuery(promptText);
+    if (locCheck.isLocation) {
+      const locFallback = synthesizeLocationResponse(promptText, locCheck.isMultiple);
+      return res.json({
+        text: locFallback.text,
+        groundingSources: locFallback.groundingSources,
+        verificationAudit: locFallback.verificationAudit,
+        searchQueries: [],
+        modelUsed: 'gemini-3.1-flash-lite (Archival Location Intelligence Engine)',
+        groundingType: 'none',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const fallback = synthesizeResearchDossier(promptText);
     res.json({
       text: fallback.text,
       groundingSources: fallback.groundingSources,
