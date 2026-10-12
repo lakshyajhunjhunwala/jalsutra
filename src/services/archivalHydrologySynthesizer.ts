@@ -513,7 +513,7 @@ Engineered primarily under the royal patronage of ${dossier.associatedRulerOrCiv
 The hydraulic design incorporates gravity stabilization, hydrodynamic energy dissipation, and sophisticated foundation keying capable of resisting extreme siltation and scour.
 Centuries of continuous operation demonstrate an extraordinary empirical mastery of open-channel hydraulics, soil mechanics, and durable pozzolanic materials that remain directly informative for modern civil engineers.
 
-## 2. Identification
+## 2. Identification and Classification
 *   **Official / Current Name:** ${loc.place}
 *   **Ancient / Sanskrit / Local Name:** ${dossier.sanskritOrLocalName || dossier.name}
 *   **Geographic Coordinates & Grid:** Latitude: ${loc.latitude}, Longitude: ${loc.longitude} (${loc.location})
@@ -522,38 +522,38 @@ Centuries of continuous operation demonstrate an extraordinary empirical mastery
 *   **Current Archaeological Status & Source Confidence:** ${loc.sourceConfidence}; protected ancient hydraulic monument maintained under national and state archaeological gazetteers with intact in-situ foundational courses.
 *   **Survival of Original Fabrics:** The basal masonry courses, intake conduits, and foundation revetments survive in-situ, encased within medieval and modern structural additions.
 
-## 3. Historical Timeline
+## 3. Historical Timeline and Development
 *   **A. Archaeologically Established Facts:** Stratified material evidence and radiocarbon-dated excavation layers place the initial construction and early operational horizon securely within ${dossier.period}.
 *   **B. Inscriptional Records:** Enduring lithic epigraphs (including ${dossier.historicalAndArchaeologicalEvidence.inscriptions[0] || 'regional temple inscriptions'}) record major construction milestones, royal endowments, and state-sponsored emergency repairs following catastrophic monsoon flood breaches.
 *   **C. Scholarly Interpretations:** Modern epigraphists and hydraulic historians confirm that the site evolved across multiple dynastic phases, continually adapting its spillway crests and canal intakes to fluctuating riverbed morphologies.
 *   **D. Traditional & Local Claims:** Local agrarian oral tradition attributes the foundational work directly to visionary dynastic forebears who mobilized collective village guilds (*Kudimaramathu*) to execute the colossal earthmoving operations.
 *   **E. Legends vs Verified Evidence:** Popular folklore often asserts mythical divine architectural assistance; however, physical excavations firmly demonstrate rational human engineering based on gravity mechanics, quarry transport, and lime-surkhi mortars.
 
-## 4. Builder / Patron / Designer
+## 4. Builders, Designers, Institutions, and Origins
 The primary historical impetus and royal funding are attributed to ${dossier.associatedRulerOrCivilization}, who governed ${dossier.state} during ${dossier.period}.
 Administrative chronicles and epigraphical edicts indicate that high-ranking state overseers, provincial governors, and hereditary engineering guilds (*Vaddas* or *Sūtradhāras*) directed the technical layout and labor force.
 The construction mobilized thousands of stone-dressers, earth-movers, and canal-cutters organized under centralized state logistics, ensuring rapid quarry delivery and hydraulic compaction before the onset of annual monsoon floods.
 Royal decrees provided tax exemptions and land grants (*mānya*) to ensure long-term custodial maintenance and structural vigilance across generations.
 
-## 5. Historical Purpose
+## 5. Original Purpose and Functional Objectives
 The hydraulic complex was engineered to fulfill multiple vital civic and agrarian imperatives:
 First, providing sustained gravity-fed irrigation to fertile alluvial command areas, transforming drought-prone hinterlands into perennial agricultural breadbaskets.
 Second, moderating torrential monsoon river surges, buffering downstream settlements against devastating flood inundations through controlled weir overflow.
 Third, replenishing urban drinking cisterns, domestic stepped tanks, and defensive moats, safeguarding urban populations during extended 8-month dry seasons.
 Fourth, maintaining river navigation and regional trade arteries, reinforcing state authority and agrarian revenue stability under classical water-tax (*Udakabhāga*) systems.
 
-## 6. Archaeological Evidence
+## 6. Archaeological, Geological, and Physical Evidence
 Stratigraphic trench excavations conducted by the Archaeological Survey of India (ASI) reveal multiple occupational courses spanning ${dossier.period} into medieval horizons.
 Excavation profiles expose deep cut-off trenches, dressed stone blocks interlocking without mechanical ties, and dense clay puddling layers (*bhal*) preventing internal piping.
 Stratified ceramic sherds, iron construction clamps, and carbonized timber revetments corroborate ancient literary dates and document systematic post-flood reconstruction sequences.
 Downstream sediment cores reflect an abrupt transition from turbulent riverbed sand to stabilized lacustrine siltation, verifying the immediate hydraulic impact of the barrier.
 
-## 7. Inscriptions
+## 7. Inscriptions, Documents, and Recorded Evidence
 ${dossier.historicalAndArchaeologicalEvidence.inscriptions.map((ins, idx) => `*   **Record #${idx + 1}:** ${ins} — Carved on granite boulders/pillars; records specific monarchical repairs, sluice enhancements, and strict irrigation rights protecting regional farming guilds.`).join('\n')}
 The inscriptional paleography (Brahmi, Grantha, or regional medieval scripts) provides indisputable chronological anchors, resolving historical debates regarding builder identity and administrative oversight.
 These epigraphical texts detail exact municipal water-allocation rules and impose severe religious and civic penalties against unauthorized embankment breaches (*Setubheda*).
 
-## 8. Engineering Design
+## 8. Overall Design, Geometry, and Classification
 The dam adopts an advanced ${dossier.structuralDesign}, optimized for the local topographical saddle and hydrological regime.
 Key structural metrology: Length: ${dossier.dimensions.length || 'Contoured terrain alignment'}; Height: ${dossier.dimensions.height || 'Multi-tier crest'}; Crest Width: ${dossier.dimensions.crestWidth || 'Variable'}; Base Width: ${dossier.dimensions.baseWidth || 'Wide-base trapezoid'}.
 The structure utilizes a heavily battered downstream slope (typically 1:2 to 1:3) and a fortified upstream revetment to resist hydrostatic sliding and overturning moments.
@@ -567,32 +567,32 @@ The curved or serpentine embankment alignment deflects peak current vectors obli
 *   **Intake Headworks & Canals:** Tiered stone intake structures guiding clarified top-strata water into contour-following distribution canals (*Pranālī*).
 *   **Sedimentation Basins:** Upstream vortex clarification chambers and settling tanks allowing coarse sands to settle out prior to water entering main irrigation channels.
 
-## 10. Construction Materials
+## 10. Materials, Soil Composition, and Physical Properties
 Constructed using ${dossier.constructionMaterials.join(', ')}, sourced from local geological formations to ensure material compatibility and durability.
 Cyclopean stone blocks, meticulously hammer-dressed on mating faces, were interlocked using gravity friction, stepped mortise-and-tenon joints, and iron dowel fastenings.
 Binding matrices employed advanced lime-surkhi pozzolanic mortars, incorporating burnt brick dust to achieve hydraulic setting properties under continuous submerged conditions.
 The impervious internal barrier utilized carefully puddled, high-plasticity clay (*bhal*), hand-rammed in thin lifts to achieve complete impermeability.
 
-## 11. Construction Method
+## 11. Construction, Formation, or Development Method
 Quarrying was conducted on nearby granite/sandstone outcroppings using wooden wedges wetted to expand and split raw rock along natural cleavage planes.
 Transport of 10-to-20-ton cyclopean blocks utilized timber rollways, heavy-duty wooden sledges, and elephant draught teams mobilized during dry-season construction windows.
 In alluvial riverbeds, builders executed deep boulder-sinking techniques, dropping massive unhewn stones into shifting sand until friction equilibrium and a stable bed were established.
 Labor mobilization was orchestrated through civic guild networks, working under strict military-grade timelines to close the central gap before the onset of monsoon runoff.
 
-## 12. Hydraulic System
+## 12. Hydraulic, Hydrological, and Soil-Water Principles
 The hydraulic architecture operates on strict hydrostatic gravity principles, maintaining a sliding factor of safety FOS > 1.75:
 $\\text{FOS}_{\\text{sliding}} = \\frac{\\mu \\cdot W_{\\text{deadweight}}}{P_{\\	ext{hydrostatic}}} > 1.5$
 The broad weir crest acts as an energy dissipator, converting potentially erosive kinetic energy into harmless hydraulic jumps over downstream stone aprons.
 Under-sluice discharge achieves Torricelli velocities ($v = \\sqrt{2gh}$) exceeding 10–12 m/s under full reservoir head, generating self-scouring velocity that transports bed sediment downstream.
 The distribution network utilizes gravity-flow contours, maintaining non-silting and non-scouring velocities between 0.6 m/s and 1.2 m/s across primary feeder branches.
 
-## 13. Irrigation Network
+## 13. Network, Distribution, and Land-Management System
 The system commands an expansive agricultural territory across ${dossier.region}, irrigating thousands of hectares of paddy, sugarcane, and millets.
 Water is distributed through a hierarchical canal topology: main feeder trunk canals branch into distributary channels (*Kulyā*), which feed village-level field trenches.
 The irrigation grid frequently incorporates cascade tank chains (*Eri* / *Cheruvu*), where surplus discharge from upper reservoirs directly feeds lower tanks in an interconnected watershed chain.
 Water allocation was strictly metered by rotational turns (*Murai*), overseen by dedicated water-distributors (*Nīrkatti*) to ensure equitable tail-end distribution.
 
-## 14. Blueprint & Site Plan
+## 14. Blueprint, Layout, and Site Plan
 [CONCEPTUAL RECONSTRUCTION — NOT AN ORIGINAL HISTORICAL BLUEPRINT]
 Plan layout exhibits an oblique, curved alignment crossing the ${dossier.riverBasin} bed, anchoring firmly into granitic rocky outcrops on both banks:
 \`\`\`
@@ -606,7 +606,7 @@ Plan layout exhibits an oblique, curved alignment crossing the ${dossier.riverBa
   [DOWNSTREAM IRRIGATION CANAL]       [RIVER SCUR BEDWAY]
 \`\`\`
 
-## 15. Cross-Section
+## 15. Cross-Section and Internal Structure
 [ARCHITECTURAL TRANSVERSE CUTAWAY — CONCEPTUAL MODEL]
 Trapezoidal gravity embankment profile demonstrating internal multi-zone construction:
 \`\`\`
@@ -622,55 +622,55 @@ Trapezoidal gravity embankment profile demonstrating internal multi-zone constru
   [RIVERBED ALLUVIUM / BEDROCK CUTOFF TRENCH (Haldi)]
 \`\`\`
 
-## 16. Hydrology
+## 16. Catchment, Soil, and Environmental Context
 Catchment hydrology is defined by extreme monsoon seasonality, where 80–90% of annual runoff occurs during concentrated 60-day precipitation surges.
 Peak flood discharge calculations using regional empirical runoff formulas ($Q = C \\cdot A^{2/3}$) indicate design capacity capable of routing major decadal flood surges safely.
 Sediment load in the ${dossier.riverBasin} is exceptionally high during early monsoon stages, transporting quartz sands, feldspathic gravels, and suspended clayey silt.
 The ancient hydraulic regime successfully harnessed this sediment, using bottom scour sluices to flush gravels while directing fine nutrient-rich silt onto farm fields.
 
-## 17. Modern Engineering Analysis
+## 17. Modern Technical and Engineering Analysis
 Modern Finite Element Analysis (FEA) and Computational Fluid Dynamics (CFD) studies demonstrate that the ancient curved profile effectively minimizes tensile stress concentrations.
 The resultant gravity vector falls squarely within the middle third of the dam base under all operating heads, completely precluding tensile cracking at the upstream toe.
 Seepage flow net modeling confirms that the deep cutoff trench (*haldi*) reduces hydraulic exit gradients to below 0.2, preventing quicksand liquefaction and piping failure.
 Modern structural evaluations rate the ancient foundation design as remarkably resilient against dynamic hydrodynamic shockwaves and seasonal saturation cycling.
 
-## 18. Historical & Modern Modifications
+## 18. Historical Changes, Modifications, and Land-Use Changes
 Across the centuries, the dam underwent successive rounds of royal repair, structural reinforcement, and crest heightening by successor dynasties.
 Major recorded interventions occurred during ${dossier.period} and medieval regimes to repair storm breaches and clear accumulated silt.
 In the 19th and 20th centuries, British and state Public Works Departments (PWD) added modern concrete crest caps, mechanical radial steel sluice gates, and vehicular roadway bridges.
 Despite extensive modern superstructures, subsurface archaeological probing confirms that the ancient foundational masonry continues to serve as the structural anchor.
 
-## 19. Current Condition
+## 19. Current Condition and Performance
 The monument maintains remarkable overall structural stability, with primary masonry courses intact and functioning as an integral component of regional water management.
 Key modern challenges include heavy upstream catchment siltation, urban domestic effluent intrusion, and commercial sand mining near downstream aprons.
 State archaeological departments and irrigation authorities have demarcated protective buffer zones and conducted structural grouting to protect historic masonry.
 The structure stands as an active, living engineering relic, continuously delivering water to thousands of agrarian families two millennia after its inception.
 
-## 20. Photographic Evidence
+## 20. Photographic and Field Evidence
 Archival colonial survey photographs from the 1880s capture the exposed ancient cyclopean stone courses prior to extensive 20th-century concrete capping.
 ASI photographic documentation illustrates the distinctive hammer-dressed masonry joints, mortise-tenon keying, and ancient low-level stone sluice conduits.
 Modern drone aerial imagery clearly traces the sweeping curved geometry of the embankment across the broad riverbed, contrasting ancient masonry with modern concrete works.
 Satellite synthetic aperture radar (SAR) imagery reveals submerged ancient training walls and paleochannel canal bifurcations extending miles into the delta.
 
-## 21. Maps & Satellite Evidence
+## 21. Maps, Satellite Imagery, and Geospatial Evidence
 Declassified CORONA satellite photographs from the 1960s document the pristine ancient canal trace prior to modern urban sprawl and industrial encroachment.
 High-resolution Google Earth multispectral imagery highlights distinct vegetative vigor indices directly correlating with the ancient gravity distribution canal network.
 Digital Elevation Models (DEM) from SRTM and Cartosat confirm that the ancient embankment was strategically sited at the optimal hydraulic inflection point of the river basin.
 GIS hydrological flow-routing models prove that the ancient site captures the maximum command area while minimizing required dam height and masonry volume.
 
-## 22. 3D / Digital Reconstruction
+## 22. 3D Reconstruction and Digital Modelling
 Photogrammetric 3D point-cloud scans conducted by heritage teams have documented individual stone block metrology and ancient chisel toolmarks.
 Terrestrial LiDAR surveys provide sub-centimeter surface mapping of the historic weir crest, quantifying differential settlement over centuries of hydraulic operation.
 Digital hydrodynamic CFD simulations model ancient monsoon flood routing, visualizing velocity vector fields across surplus spillway aprons.
 Virtual reality (VR) architectural reconstructions allow civil engineers and historians to explore the ancient intake chambers and sluice mechanisms in their original configuration.
 
-## 23. Social & Economic Impact
+## 23. Social, Agricultural, Economic, and Ecological Impact
 The construction fundamentally transformed regional agrarian economics, generating dependable agricultural surpluses that supported major dynastic capitals and urban civilization.
 Food security guaranteed by the irrigation system shielded the populace from catastrophic monsoon failures and seasonal famines that ravaged neighboring arid tracts.
 The civic institution of *Kudimaramathu* (community water maintenance) fostered decentralized governance, obligating villages to collectively maintain canals and desilt tanks.
 Water-tax revenues (*Udakabhāga*) provided the financial backbone for regional temple construction, arts, and maritime trade across the Indian Ocean network.
 
-## 24. Myths vs Evidence
+## 24. Claims vs Evidence
 | Popular Claim / Legend | Archaeological / Documentary Evidence | Evidence Quality | Scholarly Reality |
 | :--- | :--- | :--- | :--- |
 | Built with divine intervention in a single night | Multi-year stratified excavation layers with tool marks | Unsupported / Myth | Rational human engineering by organized labor guilds |
@@ -678,7 +678,7 @@ Water-tax revenues (*Udakabhāga*) provided the financial backbone for regional 
 | Sluices possessed supernatural perpetual flow | Precision-cut stone conduits governed by Torricelli gravity | Confirmed Epigraphical Fact | Gravity-driven sluices operated by wooden plug gates |
 | Structure never suffered damage or breach | Lithic inscriptions record major repair sequences | Very Strong Historical Record | Regularly maintained and repaired after extreme floods |
 
-## 25. Conflicting Historical Claims
+## 25. Conflicting Interpretations and Unresolved Debates
 Scholarly debates persist regarding the exact founding century, with some historians advocating an earlier 2nd-century BCE date while others place initial masonry in the 1st–2nd century CE.
 Divergent interpretations exist regarding the relative proportion of original ancient stone versus medieval reconstructions executed by later dynasties.
 Epigraphists debate whether specific inscriptional honorifics refer to the monarch personally or to an ancestral dynastic forebear credited with founding the irrigation network.
@@ -696,28 +696,28 @@ These scholarly disagreements are preserved transparently in archaeological lite
 *   The original crest height prior to major medieval and British PWD crest additions cannot be confirmed with absolute certainty without destructive core sampling.
 *   The complete geographic extent of the initial ancient distributary canal network before later medieval canal expansions remains partially unmapped.
 
-## 28. What We Still Don't Know
+## 28. What We Still Do Not Know
 *   The personal names, engineering treatises, and specific mathematical texts utilized by the chief architects (*Sūtradhāras*) who drafted the original alignment.
 *   The precise labor casualty figures, logistical supply chains, and quarry transport casualty rates incurred during seasonal emergency construction.
 *   The exact hydrological flood discharge ($m^3/s$) during the catastrophic storm events recorded in ancient repair inscriptions.
 *   The potential existence of undiscovered deeply buried siltation traps or secondary sluice tunnels beneath modern concrete spillway aprons.
 
-## 29. Comparison With Other Ancient Water Structures
+## 29. Comparison With Other Relevant Systems or Materials
 *   **Versus Roman Gravity Dams (Subiaco / Proserpina):** While Roman dams relied on stiff pozzolanic concrete mortared into rock gorges, ${dossier.name} pioneered flexible gravity boulder revetment on deep alluvial delta sands.
 *   **Versus Persian Qanats:** Qanats utilized subterranean infiltration tunnels in arid hills; ${dossier.name} solved broad-river surface flood harvesting and massive river diversion.
 *   **Versus Chinese Dujiangyan (256 BCE):** Like Dujiangyan, ${dossier.name} avoids blocking the river completely, utilizing hydrodynamic deflection and non-damming diversion principles.
 *   **Versus Sri Lankan Cascade Tanks:** Shares identical bed-sluice (*Bisokotuwa* / *Kalingu*) technology, demonstrating widespread trans-regional hydraulic knowledge exchange.
 
-## 30. Complete Source List
+## 30. Complete Source List and Bibliography
 *   **Tier 1 (Epigraphical & Archaeological):** Archaeological Survey of India (ASI) Excavation Memoirs; *Epigraphia Indica* Volumes; Government Inscriptions Gazetteers.
 *   **Tier 2 (Academic Books & Monographs):** Schnitter, N.J., *A History of Dams* (1994); Smith, Norman, *A History of Dams* (1971); Rao, K.L., *India's Water Wealth* (1979).
 *   **Tier 3 (Classical Sanskrit & Regional Treatises):** Kautilya's *Arthaśāstra* (ed. R.P. Kangle); King Bhoja's *Samarāṅgaṇa Sūtradhāra*; Varāhamihira's *Bṛhat Saṃhitā*.
 *   **Tier 4 (Government & PWD Reports):** Historical Records of the Public Works Department (19th–20th Century Irrigation Memoirs); State Water Resources Agency Archives.
 *   **Tier 5 (Scholarly Journals):** *Journal of Field Archaeology*; *Current Science*; *Indian Historical Review*; *World Archaeology*.
 
-## 31. Modern Dam Problems & Ancient Engineering Solutions
+## 31. Current Problems and Historical or Natural Solutions
 *   **A. Sedimentation & Reservoir Siltation:** Modern dams lose 1–2% storage capacity annually to siltation; ${dossier.name} incorporated low-level scouring sluices that utilized high Torricelli velocities to purge bed silt annually into agricultural canals.
-*   **B. Flood Management & Spillways:** Modern dams suffer catastrophic overtopping breaches when spillways jam; ${dossier.name} used broad-crested natural rock saddle weirs with unlimited freeboard discharge capacity.
+*   **B. Flood Management & Surplus Spillways:** Modern dams suffer catastrophic overtopping breaches when spillways jam; ${dossier.name} used broad-crested natural rock saddle weirs with unlimited freeboard discharge capacity.
 *   **C. Structural Stability & Sliding:** Modern concrete dams suffer alkali-silica reactivity and uplift cracking; ${dossier.name} utilized unbonded, flexible cyclopean masonry that dissipates stress and self-heals under settlement.
 *   **D. Seepage & Foundation Piping:** Modern dams face deadly subsurface piping; ${dossier.name} engineered deep clay cutoff trenches (*haldi*) and self-sinking boulder beds that equalize hydraulic exit gradients.
 *   **E. Water Distribution & Canal Efficiency:** Modern canal networks suffer heavy evaporative and tail-end losses; ${dossier.name} fed interconnected cascade tanks that stored surplus locally and recharged groundwater tables.
@@ -729,8 +729,8 @@ These scholarly disagreements are preserved transparently in archaeological lite
 *   **K. Environmental & Riparian Ecology:** High modern dams completely disrupt fish migration and sediment ecology; ${dossier.name} functioned as a low-head barrage that permitted continuous sediment passage and ecological connectivity.
 *   **L. Human & Civic Water Governance:** Modern centralized water management leads to inter-state water conflicts; ${dossier.name} was managed through decentralized local irrigation councils with clearly defined, codified water rights.
 
-## 32. Ancient Solution vs Modern Problem Matrix
-| Modern Dam Problem | Does Ancient Dam Address It? | Ancient Feature / Solution | Documented Evidence | Modern Civil Equivalent | Limitations & Differences |
+## 32. Problem-versus-Solution Evidence Matrix
+| Modern Problem | Does Ancient System Address It? | Ancient Feature / Solution | Documented Evidence | Modern Civil Equivalent | Limitations & Differences |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Reservoir Siltation** | Clearly Demonstrated | Low-level scour sluices (*Kalingu*) | ASI excavation of stone sluice culverts | Sediment bypass tunnels / bottom outlets | Requires high seasonal flow to flush bed-load effectively |
 | **Catastrophic Overtopping** | Clearly Demonstrated | Broad-crested surplus bedrock weir | In-situ granitic weir crest with zero gates | Emergency fuse-plug spillways | Lower water storage height compared to high modern dams |
@@ -738,43 +738,43 @@ These scholarly disagreements are preserved transparently in archaeological lite
 | **Seismic Shear Cracking** | Strong Evidence | Interlocking gravity cyclopean masonry | Survival through historical regional tremors | Roller-compacted concrete / modular block | Higher labor requirement for precise manual block dressing |
 | **Evaporative Storage Loss** | Clearly Demonstrated | Interconnected cascade tanks (*Eri*) | Regional GIS watershed tank mapping | Distributed aquifer recharge networks | Requires vast land area for decentralized cascade storage |
 
-## 33. What Modern Engineers Can Learn
+## 33. Lessons for Modern Engineering, Soil Management, and Environmental Planning
 *   **Passive Hydraulic Sediment Management:** Modern dams should integrate low-level sediment flushing conduits at the riverbed level to pass bed-load during early monsoon surges rather than trapping all silt behind high walls.
 *   **Flexible Modular Gravity Construction:** In high-seismic and shifting alluvial zones, interlocking cyclopean masonry with pozzolanic mortar provides superior ductile energy dissipation compared to monolithic, brittle Portland concrete.
 *   **Decentralized Cascade Storage Networks:** Rather than building single mega-dams that submerge vast forests, modern watershed engineers should revive interconnected cascade reservoirs that store water across entire river basins.
 *   **Low-Head Ecological Diversion:** Emulating ancient anicuts that raise water levels just enough for gravity canal diversion without completely blocking fish migration or starving downstream deltas of essential nutrients.
 
-## 34. Problems the Ancient Dam Did Not Solve
+## 34. Problems Not Solved or Remaining Limitations
 *   **High-Volume Multi-Year Carryover Storage:** The ancient structure could not store multi-year water reserves, leaving the command area vulnerable if the monsoon failed completely for consecutive years.
 *   **Hydroelectric Power Generation:** Built strictly for agrarian diversion and flood mitigation, the system could not generate modern mechanical or electrical energy from the hydraulic head.
 *   **Catastrophic Overtopping Under Extreme Cloudbursts:** Inscriptional chronicles prove that extraordinary once-in-a-century cloudbursts repeatedly breached sections of the embankment, necessitating emergency royal repairs.
 *   **High-Velocity Canal Bank Scour:** Without modern concrete canal linings, unlined earthen canals suffered bank erosion, weed growth, and progressive seepage loss along extended distributaries.
 
-## 35. Modern Dam vs Ancient Dam
-*   **Structural Material:** Modern dams use reinforced Portland cement concrete (design lifespan 80–120 years); the ancient dam uses cyclopean stone, puddle clay, and pozzolanic lime-surkhi (proven lifespan 2,000+ years).
-*   **Hydraulic Height & Storage:** Modern dams reach heights of 100–300 meters storing billions of cubic meters; the ancient dam operates as a low-head barrage (4–10 meters) focusing on diversion and cascade storage.
-*   **Automation & Monitoring:** Modern dams utilize piezometers, seismographs, and SCADA-automated radial gates; the ancient dam relied on manual wooden plug sluices and human vigilance.
-*   **Environmental Footprint:** Modern mega-dams cause massive forest submergence, community displacement, and river fragmentation; the ancient dam maintained ecological connectivity and enhanced local wetlands.
+## 35. Historical/Traditional vs Modern Comparison
+*   **Structural Material:** Modern structures use reinforced Portland cement concrete (design lifespan 80–120 years); the ancient structure uses cyclopean stone, puddle clay, and pozzolanic lime-surkhi (proven lifespan 2,000+ years).
+*   **Hydraulic Height & Storage:** Modern dams reach heights of 100–300 meters storing billions of cubic meters; the ancient structure operates as a low-head barrage (4–10 meters) focusing on diversion and cascade storage.
+*   **Automation & Monitoring:** Modern systems utilize piezometers, seismographs, and SCADA-automated radial gates; the ancient system relied on manual wooden plug sluices and human vigilance.
+*   **Environmental Footprint:** Modern mega-dams cause massive forest submergence, community displacement, and river fragmentation; the ancient system maintained ecological connectivity and enhanced local wetlands.
 
-## 36. Engineering Lessons for a New-Generation Dam
+## 36. Lessons for Next-Generation Systems
 *   **Climate-Resilient Low-Carbon Materials:** Future hydraulic structures should replace high-emission Portland cement with modernized lime-pozzolan and calcined-clay matrices that offer self-healing properties and negative carbon footprints.
 *   **Integrated Sediment Flushing Architecture:** Next-generation dams must incorporate full-width bed-level flushing bays that simulate natural river morphology and maintain coastal delta replenishment.
 *   **Nature-Based Gravity Energy Dissipation:** Designing spillways that follow natural bedrock contours and stepped cascade outcroppings rather than artificial, high-maintenance hydraulic stilling basins.
 *   **Hybrid Decentralized Watershed Grids:** Combining a modest central headwork with thousands of restored downstream micro-tanks to create redundant, resilient water networks immune to single-point failure.
 
-## 37. "What Was the Ancient Engineer Getting Right?"
+## 37. What the Original Design or Natural System Did Well
 *   **Siting at the Optimal Hydraulic Inflection Point:** The ancient builders positioned the structure precisely where the river gradient flattens and deltaic bifurcation begins, maximizing diversion with minimal embankment height.
 *   **Harnessing Hydrodynamic Deflection:** The sweeping curved alignment works with the river's natural flow vectors rather than confronting them perpendicularly, drastically lowering dynamic drag forces.
 *   **Self-Stabilizing Alluvial Foundations:** Sinking massive unhewn boulders into shifting sands allowed the riverbed to achieve natural sand-friction compaction, creating an enduring natural subterranean apron.
 *   **Closing the Nutrient Loop:** Directing fine suspended silt onto agricultural fields via under-sluices eliminated reservoir choking while providing natural organic fertilization to delta crops.
 
-## 38. "What Would a Modern Engineer Change?"
+## 38. What a Modern Engineer or Scientist Would Change
 *   [MODERN ENGINEERING ANALYSIS] **Automated Real-Time Telemetry:** Install acoustic Doppler velocity meters, piezometers, and automated SCADA control gates to monitor internal pore-water pressures and river discharge in real time.
 *   [MODERN ENGINEERING ANALYSIS] **Seepage Cutoff Grouting:** Supplement ancient puddle-clay cutoff trenches with modern jet-grouted cementitious curtains to further reduce foundation exit gradients.
 *   [MODERN ENGINEERING ANALYSIS] **Engineered Energy-Dissipation Aprons:** Add reinforced baffle blocks and hydraulic dentated sills downstream of spillways to counter accelerated modern riverbed degradation caused by commercial sand mining.
 *   [MODERN ENGINEERING ANALYSIS] **Standardized Catchment Silt Traps:** Construct upstream check-dams and biological vegetative contour bunds to intercept catchment erosion before sediment reaches the historic headworks.
 
-## 39. Final Engineering Insight & Research Confidence Assessment
+## 39. Final Findings and Research Confidence Assessment
 
 ### Finding 1: Chronological Antiquity & Dynastic Provenance
 * 🎯 **Confidence: 95%**

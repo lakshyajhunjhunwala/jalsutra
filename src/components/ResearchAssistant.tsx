@@ -25,6 +25,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer.tsx';
+import { UniversalResearchExplorer } from './UniversalResearchExplorer.tsx';
 import { HallucinationAuditCard } from './HallucinationAuditCard.tsx';
 import { SourcesDrawer } from './SourcesDrawer.tsx';
 import { VerificationAudit } from '../types/verification.ts';
@@ -159,6 +160,7 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
   const [verificationAudit, setVerificationAudit] = useState<VerificationAudit | undefined>(undefined);
   const [researchSources, setResearchSources] = useState<ResearchSource[]>([]);
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
+  const [subjectCategory, setSubjectCategory] = useState<string>('');
 
   // Authentication & Search History System State
   const [currentUser, setCurrentUser] = useState<JalaSutraUser | null>(null);
@@ -367,6 +369,7 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
     setLoading(true);
     setError(null);
     setResponse(null);
+    setSubjectCategory('');
     setGroundingSources([]);
 
     try {
@@ -391,6 +394,9 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
 
       const data = await res.json();
       setResponse(data.text);
+      if (data.subjectCategory) {
+        setSubjectCategory(data.subjectCategory);
+      }
       setOfflineNotice(data.offlineFallback ? (data.offlineReason || 'Gemini API temporarily unavailable — showing curated archival dossier.') : null);
       if (data.modelUsed) {
         setModelUsed(data.modelUsed);
@@ -837,10 +843,14 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
             </div>
           )}
 
-          {/* Render Markdown Content */}
-          <div className="prose prose-stone max-w-none text-[#332A21] leading-relaxed">
-            <MarkdownRenderer content={response} />
-          </div>
+          {/* Universal Research Explorer (Interactive Accordion & Digital Encyclopedia) */}
+          <UniversalResearchExplorer
+            content={response}
+            subjectTitle={query}
+            subjectCategory={subjectCategory}
+            onSendToChat={onSendToChat}
+            onExportToDrive={() => exportResearchDossierToDrive(query, response, groundingSources)}
+          />
 
           {/* ── Sources Panel (Grok-style) ──────────────────────────────────── */}
           <SourcesDrawer
