@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -19,30 +19,27 @@ import {
   Sprout,
   Activity,
   Share2,
+  Loader2,
+  AlertCircle,
+  RotateCcw,
+  MessageSquare,
 } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer.tsx';
+import {
+  StructuredResearchReport,
+  StructuredSection,
+  CANONICAL_39_SECTION_DEFINITIONS,
+  SubjectType,
+} from '../types/universalResearch.ts';
+import { getApiUrl } from '../services/apiConfig.ts';
 
-export interface ResearchSubtopic {
-  id: string;
-  title: string;
-  content: string;
-  wordCount: number;
-}
-
-export interface ResearchSection {
-  sectionNumber: number;
-  title: string;
-  categoryGroup: string;
-  categoryGroupId: string;
-  rawContent: string;
-  subtopics: ResearchSubtopic[];
-  wordCount: number;
-}
-
-interface UniversalResearchExplorerProps {
-  content: string;
+export interface UniversalResearchExplorerProps {
+  report?: StructuredResearchReport | null;
+  content?: string | null;
   subjectTitle?: string;
   subjectCategory?: string;
+  subjectType?: SubjectType | string;
+  researchId?: string;
   onSendToChat?: (text: string) => void;
   onExportToDrive?: () => void;
 }
@@ -73,65 +70,16 @@ function getCategoryGroupId(num: number): { id: string; label: string } {
   return { id: 'cat9', label: 'Next-Gen Lessons & Verdict' };
 }
 
-// Canonical 39 Section Titles
-export const CANONICAL_SECTION_TITLES: { [key: number]: string } = {
-  1: 'Executive Summary',
-  2: 'Identification and Classification',
-  3: 'Historical Timeline and Development',
-  4: 'Builders, Designers, Institutions, and Origins',
-  5: 'Original Purpose and Functional Objectives',
-  6: 'Archaeological, Geological, and Physical Evidence',
-  7: 'Inscriptions, Documents, and Recorded Evidence',
-  8: 'Overall Design, Geometry, and Classification',
-  9: 'Component-by-Component Analysis',
-  10: 'Materials, Soil Composition, and Physical Properties',
-  11: 'Construction, Formation, or Development Method',
-  12: 'Hydraulic, Hydrological, and Soil-Water Principles',
-  13: 'Network, Distribution, and Land-Management System',
-  14: 'Blueprint, Layout, and Site Plan',
-  15: 'Cross-Section and Internal Structure',
-  16: 'Catchment, Soil, and Environmental Context',
-  17: 'Modern Technical and Engineering Analysis',
-  18: 'Historical Changes, Modifications, and Land-Use Changes',
-  19: 'Current Condition and Performance',
-  20: 'Photographic and Field Evidence',
-  21: 'Maps, Satellite Imagery, and Geospatial Evidence',
-  22: '3D Reconstruction and Digital Modelling',
-  23: 'Social, Agricultural, Economic, and Ecological Impact',
-  24: 'Claims vs Evidence',
-  25: 'Conflicting Interpretations and Unresolved Debates',
-  26: 'What We Know With High Confidence',
-  27: 'What Remains Uncertain',
-  28: 'What We Still Do Not Know',
-  29: 'Comparison With Other Relevant Systems or Materials',
-  30: 'Complete Source List and Bibliography',
-  31: 'Current Problems and Historical or Natural Solutions',
-  32: 'Problem-versus-Solution Evidence Matrix',
-  33: 'Lessons for Modern Engineering, Soil Management, and Environmental Planning',
-  34: 'Problems Not Solved or Remaining Limitations',
-  35: 'Historical/Traditional vs Modern Comparison',
-  36: 'Lessons for Next-Generation Systems',
-  37: 'What the Original Design or Natural System Did Well',
-  38: 'What a Modern Engineer or Scientist Would Change',
-  39: 'Final Findings and Research Confidence Assessment',
-};
+// Canonical Section Titles Map
+export const CANONICAL_SECTION_TITLES: { [key: number]: string } = Object.fromEntries(
+  CANONICAL_39_SECTION_DEFINITIONS.map((d) => [d.number, d.title])
+);
 
-// Parse raw 39-section markdown into structured sections and individual research points
-export function parseDossierSections(markdown: string): {
-  title: string;
-  sections: ResearchSection[];
-  totalPoints: number;
-} {
-  if (!markdown) return { title: 'Research Dossier', sections: [], totalPoints: 0 };
+// Fallback parser to extract sections from raw markdown text
+export function parseSectionsFromMarkdown(markdown: string): StructuredSection[] {
+  if (!markdown) return [];
 
-  // Extract main title from # HEADER
-  const titleMatch = markdown.match(/^#\s+(.*?)(?:\n|$)/m);
-  const title = titleMatch ? titleMatch[1].replace(/—.*$/, '').trim() : 'Research Dossier';
-
-  const sections: ResearchSection[] = [];
-  let totalPoints = 0;
-
-  // Split by ## [Number]. or ## [Number]
+  const sections: StructuredSection[] = [];
   const sectionRegex = /^##\s+(\d+)[\.:\s]+(.*?)(?=\n##\s+\d+[\.:\s]|\n#[^#]|$)/gms;
   let match: RegExpExecArray | null;
 
@@ -139,109 +87,133 @@ export function parseDossierSections(markdown: string): {
     const secNum = parseInt(match[1], 10);
     const rawTitle = match[2].split('\n')[0].trim();
     const sectionBody = match[2].slice(rawTitle.length).trim();
-
-    const cleanTitle = CANONICAL_SECTION_TITLES[secNum] || rawTitle.replace(/\(.*?\)/g, '').trim();
+    const def = CANONICAL_39_SECTION_DEFINITIONS.find((d) => d.number === secNum);
+    const cleanTitle = def?.title || rawTitle.replace(/\(.*?\)/g, '').trim();
     const catInfo = getCategoryGroupId(secNum);
 
-    // Parse subtopics/points in this section
-    const subtopics: ResearchSubtopic[] = [];
-
-    // Check for bullet points: * **[Title]:** [Content] or - **[Title]:** [Content]
+    const topics: any[] = [];
     const bulletRegex = /(?:^|\n)[\*\-]\s+\*\*(.*?)\*\*[:\-]?\s*([\s\S]*?)(?=(?:\n[\*\-]\s+\*\*)|$)/g;
     let bMatch: RegExpExecArray | null;
-
     while ((bMatch = bulletRegex.exec(sectionBody)) !== null) {
       const pTitle = bMatch[1].trim();
       const pContent = bMatch[2].trim();
-      const words = pContent.split(/\s+/).filter(Boolean).length;
       if (pContent.length > 10) {
-        subtopics.push({
-          id: `sec-${secNum}-pt-${subtopics.length + 1}`,
+        topics.push({
+          id: `sec-${secNum}-pt-${topics.length + 1}`,
           title: pTitle,
           content: pContent,
-          wordCount: words,
         });
       }
     }
 
-    // Check for lettered/numbered items (e.g., A. Title, B. Title in Section 31 or 3) if no bullets found
-    if (subtopics.length === 0) {
-      const letteredRegex = /(?:^|\n)\s*([A-L]\.|\d+\.)\s+\*\*?(.*?)\*\*?[:\-]?\s*([\s\S]*?)(?=(?:\n\s*(?:[A-L]\.|\d+\.)\s+\*\*?)|$)/g;
-      let lMatch: RegExpExecArray | null;
-      while ((lMatch = letteredRegex.exec(sectionBody)) !== null) {
-        const pTitle = `${lMatch[1]} ${lMatch[2].trim()}`;
-        const pContent = lMatch[3].trim();
-        const words = pContent.split(/\s+/).filter(Boolean).length;
-        if (pContent.length > 10) {
-          subtopics.push({
-            id: `sec-${secNum}-pt-${subtopics.length + 1}`,
-            title: pTitle,
-            content: pContent,
-            wordCount: words,
-          });
-        }
-      }
-    }
-
-    const wordsInSection = sectionBody.split(/\s+/).filter(Boolean).length;
-    totalPoints += subtopics.length > 0 ? subtopics.length : 1;
-
+    const words = sectionBody.split(/\s+/).filter(Boolean).length;
     sections.push({
-      sectionNumber: secNum,
+      id: `section-${secNum}`,
+      number: secNum,
       title: cleanTitle,
       categoryGroup: catInfo.label,
       categoryGroupId: catInfo.id,
-      rawContent: sectionBody,
-      subtopics,
-      wordCount: wordsInSection,
+      status: sectionBody.length > 20 ? 'ready' : 'not_loaded',
+      content: sectionBody,
+      topics: topics.length > 0 ? topics : undefined,
+      wordCount: words,
+      confidence: 'high',
     });
   }
 
-  // Fallback if regex missed any sections due to non-standard headings
-  if (sections.length === 0) {
-    sections.push({
-      sectionNumber: 1,
-      title: 'Complete Research Analysis',
-      categoryGroup: 'Overview & Identification',
-      categoryGroupId: 'cat1',
-      rawContent: markdown,
-      subtopics: [],
-      wordCount: markdown.split(/\s+/).filter(Boolean).length,
-    });
-    totalPoints = 1;
-  }
-
-  // Sort by section number
-  sections.sort((a, b) => a.sectionNumber - b.sectionNumber);
-
-  return { title, sections, totalPoints };
+  return sections;
 }
 
 export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps> = ({
+  report,
   content,
   subjectTitle,
   subjectCategory,
+  subjectType = 'other',
+  researchId,
   onSendToChat,
   onExportToDrive,
 }) => {
   const [viewMode, setViewMode] = useState<'interactive' | 'document'>('interactive');
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([1, 2]));
+  const [loadingSections, setLoadingSections] = useState<Set<number>>(new Set());
+  const [errorSections, setErrorSections] = useState<Map<number, string>>(new Map());
   const [expandedSubtopics, setExpandedSubtopics] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Parse sections
-  const { title: parsedTitle, sections, totalPoints } = useMemo(() => {
-    return parseDossierSections(content);
-  }, [content]);
+  // Initialize or update section state
+  const [sections, setSections] = useState<StructuredSection[]>(() => {
+    if (report && Array.isArray(report.sections) && report.sections.length > 0) {
+      return report.sections;
+    }
+    if (content) {
+      const parsed = parseSectionsFromMarkdown(content);
+      if (parsed.length > 0) return parsed;
+    }
+    return CANONICAL_39_SECTION_DEFINITIONS.map((def) => ({
+      id: `section-${def.number}`,
+      number: def.number,
+      title: def.title,
+      categoryGroup: def.categoryGroup,
+      categoryGroupId: def.categoryGroupId,
+      status: 'not_loaded',
+      content: '',
+      topics: [
+        {
+          id: `section-${def.number}-topic-1`,
+          title: def.defaultTopicTitle,
+          content: '',
+        },
+      ],
+      sources: [],
+    }));
+  });
 
-  const displayTitle = subjectTitle || parsedTitle;
+  // Keep sections synced when report or content changes
+  useEffect(() => {
+    if (report && Array.isArray(report.sections) && report.sections.length > 0) {
+      setSections(report.sections);
+      return;
+    }
+    if (content) {
+      const parsed = parseSectionsFromMarkdown(content);
+      if (parsed.length > 0) {
+        // Merge with existing canonical list so all 39 sections exist
+        const merged: StructuredSection[] = CANONICAL_39_SECTION_DEFINITIONS.map((def) => {
+          const found = parsed.find((p) => p.number === def.number);
+          if (found) return found;
+          return {
+            id: `section-${def.number}`,
+            number: def.number,
+            title: def.title,
+            categoryGroup: def.categoryGroup,
+            categoryGroupId: def.categoryGroupId,
+            status: 'not_loaded',
+            content: '',
+            topics: [
+              {
+                id: `section-${def.number}-topic-1`,
+                title: def.defaultTopicTitle,
+                content: '',
+              },
+            ],
+            sources: [],
+          };
+        });
+        setSections(merged);
+      }
+    }
+  }, [report, content]);
+
+  const displayTitle = subjectTitle || report?.subject || 'Research Dossier';
 
   // Detect subject category badge
   const detectedCategory = useMemo(() => {
     if (subjectCategory) return subjectCategory;
-    const lower = (content + ' ' + displayTitle).toLowerCase();
+    if (report?.subjectCategory) return report.subjectCategory;
+    const lower = (String(content || '') + ' ' + displayTitle).toLowerCase();
     if (lower.includes('soil') || lower.includes('bhumi-pariksha') || lower.includes('texture')) return '🌾 Soil Science & Texture';
     if (lower.includes('channel') || lower.includes('canal') || lower.includes('tusaspha')) return '🌊 Water Channels & Aqueducts';
     if (lower.includes('drainage') || lower.includes('sewer') || lower.includes('mohenjo')) return '💧 Drainage & Subsurface Sanitation';
@@ -249,56 +221,117 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
     if (lower.includes('irrigation') || lower.includes('command area') || lower.includes('cascade tank') || lower.includes('eri')) return '🌿 Irrigation Networks & Cascade Tanks';
     if (lower.includes('dam') || lower.includes('reservoir') || lower.includes('anicut') || lower.includes('bund')) return '🏛️ Dams & Reservoirs';
     return '🔬 Integrated Water & Environmental Systems';
-  }, [content, displayTitle, subjectCategory]);
+  }, [content, displayTitle, subjectCategory, report?.subjectCategory]);
 
-  // Filter sections by category and search query
-  const filteredSections = useMemo(() => {
-    return sections.filter((sec) => {
-      // Category filter
-      if (categoryFilter !== 'all' && sec.categoryGroupId !== categoryFilter) {
-        return false;
-      }
-      // Search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = sec.title.toLowerCase().includes(q);
-        const matchesContent = sec.rawContent.toLowerCase().includes(q);
-        const matchesSubtopics = sec.subtopics.some(
-          (sub) => sub.title.toLowerCase().includes(q) || sub.content.toLowerCase().includes(q)
-        );
-        return matchesTitle || matchesContent || matchesSubtopics;
-      }
-      return true;
+  const effectiveSubjectType = report?.subjectType || subjectType || 'other';
+  const effectiveResearchId = report?.id || researchId || 'current';
+
+  // Fetch a section on demand from backend API
+  const fetchSectionContent = async (secNum: number, secTitle: string) => {
+    setLoadingSections((prev) => new Set(prev).add(secNum));
+    setErrorSections((prev) => {
+      const next = new Map(prev);
+      next.delete(secNum);
+      return next;
     });
-  }, [sections, categoryFilter, searchQuery]);
+
+    try {
+      const url = getApiUrl(
+        `/api/research/${effectiveResearchId}/sections/section-${secNum}?subject=${encodeURIComponent(
+          displayTitle
+        )}&subjectType=${encodeURIComponent(effectiveSubjectType)}`
+      );
+
+      let res = await fetch(url);
+      if (!res.ok) {
+        // Fallback to POST /api/research/section
+        res = await fetch(getApiUrl('/api/research/section'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            researchId: effectiveResearchId,
+            sectionId: `section-${secNum}`,
+            sectionNumber: secNum,
+            sectionTitle: secTitle,
+            subject: displayTitle,
+            subjectType: effectiveSubjectType,
+          }),
+        });
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with status ${res.status}`);
+      }
+
+      const data: StructuredSection = await res.json();
+
+      setSections((prev) =>
+        prev.map((s) => (s.number === secNum ? { ...s, ...data, status: 'ready' } : s))
+      );
+    } catch (err: any) {
+      console.error(`Failed to load section ${secNum}:`, err);
+      const msg = err.message || 'Failed to research this section. Click retry.';
+      setErrorSections((prev) => new Map(prev).set(secNum, msg));
+      setSections((prev) =>
+        prev.map((s) => (s.number === secNum ? { ...s, status: 'error', error: msg } : s))
+      );
+    } finally {
+      setLoadingSections((prev) => {
+        const next = new Set(prev);
+        next.delete(secNum);
+        return next;
+      });
+    }
+  };
+
+  // Toggle a section's accordion
+  const toggleSection = async (secNum: number) => {
+    // If open, close it
+    if (expandedSections.has(secNum)) {
+      setExpandedSections((prev) => {
+        const next = new Set(prev);
+        next.delete(secNum);
+        return next;
+      });
+      return;
+    }
+
+    // Expand it
+    setExpandedSections((prev) => new Set(prev).add(secNum));
+
+    // Check if content already cached
+    const sec = sections.find((s) => s.number === secNum);
+    if (!sec) return;
+
+    if (sec.status === 'ready' && sec.content && sec.content.trim().length > 30) {
+      return; // Already loaded and cached
+    }
+
+    // Not loaded yet — trigger on-demand research
+    await fetchSectionContent(secNum, sec.title);
+  };
 
   // Expand / collapse all
-  const handleExpandAll = () => {
-    const allSecIds = new Set<number>(sections.map((s) => s.sectionNumber));
-    const allSubIds = new Set<string>();
-    sections.forEach((sec) => {
-      sec.subtopics.forEach((sub) => allSubIds.add(sub.id));
-    });
-    setExpandedSections(allSecIds);
-    setExpandedSubtopics(allSubIds);
+  const handleExpandAll = async () => {
+    const allNums = new Set(sections.map((s) => s.number));
+    setExpandedSections(allNums);
+
+    // Find un-loaded sections
+    const unLoaded = sections.filter(
+      (s) => s.status !== 'ready' || !s.content || s.content.trim().length < 30
+    );
+
+    // Load un-loaded sections with controlled concurrency (3 at a time)
+    for (let i = 0; i < unLoaded.length; i += 3) {
+      const chunk = unLoaded.slice(i, i + 3);
+      await Promise.allSettled(chunk.map((s) => fetchSectionContent(s.number, s.title)));
+    }
   };
 
   const handleCollapseAll = () => {
     setExpandedSections(new Set());
     setExpandedSubtopics(new Set());
-  };
-
-  // Toggle section
-  const toggleSection = (secNum: number) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(secNum)) {
-        next.delete(secNum);
-      } else {
-        next.add(secNum);
-      }
-      return next;
-    });
   };
 
   // Toggle subtopic point
@@ -314,27 +347,53 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
     });
   };
 
-  // Copy text helper
+  // Copy helper
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Count total expanded items
-  const expandedCount = useMemo(() => {
-    let count = 0;
-    sections.forEach((sec) => {
-      if (sec.subtopics.length > 0) {
-        sec.subtopics.forEach((sub) => {
-          if (expandedSubtopics.has(sub.id)) count++;
-        });
-      } else if (expandedSections.has(sec.sectionNumber)) {
-        count++;
+  // Filter sections by category and search query
+  const filteredSections = useMemo(() => {
+    return sections.filter((sec) => {
+      // Category filter
+      if (categoryFilter !== 'all' && sec.categoryGroupId !== categoryFilter) {
+        return false;
+      }
+      // Search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = sec.title.toLowerCase().includes(q);
+        const matchesContent = (sec.content || '').toLowerCase().includes(q);
+        const matchesTopics = (sec.topics || []).some(
+          (sub) => sub.title.toLowerCase().includes(q) || (sub.content || '').toLowerCase().includes(q)
+        );
+        return matchesTitle || matchesContent || matchesTopics;
+      }
+      return true;
+    });
+  }, [sections, categoryFilter, searchQuery]);
+
+  // Total ready word count
+  const readySectionsCount = useMemo(() => {
+    return sections.filter((s) => s.status === 'ready' && s.content && s.content.length > 30).length;
+  }, [sections]);
+
+  // Full assembled report text for document view
+  const fullDocumentMarkdown = useMemo(() => {
+    if (content && content.length > 500) return content;
+    const parts = [`# ${displayTitle.toUpperCase()} — COMPLETE RESEARCH REPORT\n`];
+    sections.forEach((s) => {
+      parts.push(`## ${s.number}. ${s.title}`);
+      if (s.content && s.content.trim()) {
+        parts.push(s.content);
+      } else {
+        parts.push(`*(Section ${s.number} research pending on-demand investigation)*\n`);
       }
     });
-    return count;
-  }, [sections, expandedSections, expandedSubtopics]);
+    return parts.join('\n\n');
+  }, [content, displayTitle, sections]);
 
   return (
     <div className="bg-[#FAF7F0] border border-[#E0D8CB] rounded-xl overflow-hidden shadow-xs space-y-0">
@@ -348,12 +407,15 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
             <span className="px-2 py-0.5 rounded bg-[#EAE1D1] text-[#695847] border border-[#D8CCBA] text-[11px] font-mono">
               Universal 39-Section Protocol
             </span>
+            <span className="px-2 py-0.5 rounded bg-[#FAF4EB] text-[#8B3A1C] border border-[#E2D2BE] text-[11px] font-semibold">
+              {readySectionsCount} / 39 Sections Researched
+            </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#2A2117] tracking-tight">
             {displayTitle}
           </h2>
           <p className="text-xs text-[#706253]">
-            Interactive evidence-grounded research explorer. Click any topic or research point to expand verified technical details.
+            Click any section heading or arrow below to investigate verified 200–300-word engineering analyses, primary inscriptions, and soil physics directly on this page.
           </p>
         </div>
 
@@ -390,9 +452,9 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
           {/* Copy Full Dossier */}
           <button
             type="button"
-            onClick={() => handleCopy('full-dossier', content)}
+            onClick={() => handleCopy('full-dossier', fullDocumentMarkdown)}
             className="px-2.5 py-1.5 text-xs rounded bg-white hover:bg-[#FAF6EE] text-[#4F3F30] border border-[#D5CABB] flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-            title="Copy entire research dossier"
+            title="Copy entire research report"
           >
             {copiedId === 'full-dossier' ? (
               <>
@@ -438,16 +500,6 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
 
               {/* Metrics & Expand/Collapse Controls */}
               <div className="flex items-center gap-2 shrink-0 text-xs">
-                {/* Active Counters */}
-                <div className="hidden lg:flex items-center gap-2 text-[11px] text-[#6E5D4C] font-medium mr-2">
-                  <span className="bg-white border border-[#DED4C4] px-2 py-0.5 rounded shadow-2xs">
-                    <strong>{sections.length}</strong> Sections · <strong>{totalPoints}</strong> Points
-                  </span>
-                  <span className="bg-[#EFE7D8] border border-[#D8CABA] px-2 py-0.5 rounded text-[#8B3A1C]">
-                    <strong>{expandedCount}</strong> Expanded
-                  </span>
-                </div>
-
                 <button
                   type="button"
                   onClick={handleExpandAll}
@@ -513,29 +565,34 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
             </div>
           )}
 
-          {/* ── ACCORDION LIST: SECTIONS & RESEARCH POINTS ─────────────────── */}
+          {/* ── ACCORDION LIST: 39 SECTIONS WITH ON-DEMAND EXPANSION ────────── */}
           <div className="space-y-3">
             {filteredSections.map((sec) => {
-              const isSecOpen = expandedSections.has(sec.sectionNumber);
-              const hasSubtopics = sec.subtopics.length > 0;
+              const isSecOpen = expandedSections.has(sec.number);
+              const isLoading = loadingSections.has(sec.number);
+              const isError = errorSections.has(sec.number) || sec.status === 'error';
+              const isReady = sec.status === 'ready' && !!sec.content && sec.content.trim().length > 20;
+              const hasSubtopics = Array.isArray(sec.topics) && sec.topics.length > 1;
 
               return (
                 <div
-                  key={sec.sectionNumber}
-                  className="bg-white border border-[#DFD6C7] rounded-lg overflow-hidden transition-all shadow-2xs"
+                  key={sec.number}
+                  className={`border rounded-lg overflow-hidden transition-all shadow-2xs ${
+                    isSecOpen ? 'border-[#C8B8A2] bg-[#FCFBF8]' : 'border-[#DFD6C7] bg-white hover:border-[#8B3A1C]/50'
+                  }`}
                 >
-                  {/* Section Main Header (Compact One-Line Clickable Heading) */}
+                  {/* Section Main Header (Clickable Accordion Row) */}
                   <div
-                    onClick={() => toggleSection(sec.sectionNumber)}
-                    className={`px-4 py-2.5 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                      isSecOpen ? 'bg-[#FDFBF7] border-b border-[#ECE3D4]' : 'hover:bg-[#FAF6EE]'
+                    onClick={() => toggleSection(sec.number)}
+                    className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
+                      isSecOpen ? 'bg-[#FAF4EB] border-b border-[#ECE2D2]' : 'hover:bg-[#FAF6EE]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="w-6 h-6 rounded bg-[#F2EAE0] text-[#8B3A1C] font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-[#E0D4C2]">
-                        {sec.sectionNumber}
+                        {sec.number}
                       </span>
-                      <h3 className="font-serif font-bold text-sm text-[#271E15] truncate">
+                      <h3 className="font-serif font-bold text-sm sm:text-base text-[#271E15] truncate">
                         {sec.title}
                       </h3>
                       <span className="hidden sm:inline-block text-[10px] text-[#8E7E6E] bg-[#F7F2E8] px-1.5 py-0.5 rounded border border-[#E5DAC8] shrink-0 font-medium">
@@ -544,16 +601,28 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      {hasSubtopics ? (
-                        <span className="text-[11px] font-medium text-[#8B3A1C] bg-[#FAF1E9] px-2 py-0.5 rounded-full border border-[#EED7C8]">
-                          {sec.subtopics.length} {sec.subtopics.length === 1 ? 'Point' : 'Points'}
+                      {/* State Badges */}
+                      {isLoading ? (
+                        <span className="text-[11px] font-medium text-[#8B3A1C] bg-[#FAF1E9] px-2 py-0.5 rounded-full border border-[#EED7C8] flex items-center gap-1 animate-pulse">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Investigating...</span>
+                        </span>
+                      ) : isError ? (
+                        <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          <span>Needs Retry</span>
+                        </span>
+                      ) : isReady ? (
+                        <span className="text-[10px] text-[#7C6C5B] font-mono bg-[#EFE8DC] px-2 py-0.5 rounded border border-[#DFD4C2]">
+                          ~{sec.wordCount || sec.content?.split(/\s+/).filter(Boolean).length || 250} words
                         </span>
                       ) : (
-                        <span className="text-[10px] text-[#8C7D6D] font-mono">
-                          ~{sec.wordCount} words
+                        <span className="text-[10px] text-[#8C7D6D] italic">
+                          Click to investigate
                         </span>
                       )}
 
+                      {/* Expand / Collapse Indicator */}
                       <div className="p-1 rounded text-[#706050] hover:bg-[#EAE0D1] transition-transform">
                         {isSecOpen ? (
                           <ChevronDown className="w-4 h-4 text-[#8B3A1C]" />
@@ -564,133 +633,194 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
                     </div>
                   </div>
 
-                  {/* Section Body */}
+                  {/* Section Body (Visible when expanded) */}
                   {isSecOpen && (
-                    <div className="p-3 sm:p-4 bg-[#FCFBF8] space-y-3">
-                      {/* Case A: Section has individual research subtopic points */}
-                      {hasSubtopics ? (
-                        <div className="space-y-2">
-                          {sec.subtopics.map((sub) => {
-                            const isSubOpen = expandedSubtopics.has(sub.id);
-
-                            return (
-                              <div
-                                key={sub.id}
-                                className="border border-[#E4DACB] rounded-md bg-white overflow-hidden transition-all shadow-2xs"
-                              >
-                                {/* Research Point Clickable Title Bar */}
-                                <div
-                                  onClick={() => toggleSubtopic(sub.id)}
-                                  className={`px-3.5 py-2 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors ${
-                                    isSubOpen
-                                      ? 'bg-[#FAF4EB] border-b border-[#E8DDCC]'
-                                      : 'hover:bg-[#FAF7F0]'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-[#8B3A1C] font-bold text-xs select-none">
-                                      {isSubOpen ? '▼' : '▶'}
-                                    </span>
-                                    <span className="font-sans font-semibold text-xs sm:text-sm text-[#2C2219] truncate">
-                                      {sub.title}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 shrink-0 text-[11px]">
-                                    <span className="text-[10px] text-[#938373] font-mono hidden sm:inline">
-                                      {sub.wordCount} words
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCopy(sub.id, `### ${sub.title}\n\n${sub.content}`);
-                                      }}
-                                      className="p-1 rounded text-[#8B7C6E] hover:text-[#8B3A1C] hover:bg-[#EFE8DC] transition-colors cursor-pointer"
-                                      title="Copy this research point"
-                                    >
-                                      {copiedId === sub.id ? (
-                                        <Check className="w-3 h-3 text-emerald-600" />
-                                      ) : (
-                                        <Copy className="w-3 h-3" />
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Expanded Research Point Content (200–300 words of technical details) */}
-                                {isSubOpen && (
-                                  <div className="p-3.5 sm:p-4 text-xs sm:text-sm text-[#30251B] leading-relaxed bg-[#FFFFFF] animate-in fade-in duration-150">
-                                    <MarkdownRenderer content={sub.content} />
-
-                                    {/* Action Footnote inside Subtopic */}
-                                    <div className="mt-3 pt-2.5 border-t border-[#F0E8DC] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#867565]">
-                                      <span className="flex items-center gap-1 font-mono text-[10px]">
-                                        <ShieldCheck className="w-3 h-3 text-[#8B3A1C]" />
-                                        Evidence Verified · Epigraphia & Modern Geotechnics
-                                      </span>
-                                      {onSendToChat && (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            onSendToChat(
-                                              `Regarding Section ${sec.sectionNumber} (${sec.title}) - "${sub.title}":\n\n${sub.content.slice(0, 300)}...\n\nCan you expand on the technical physics and archaeological evidence?`
-                                            )
-                                          }
-                                          className="text-[#8B3A1C] hover:underline font-medium cursor-pointer"
-                                        >
-                                          Discuss Point in Chat →
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                    <div className="p-4 sm:p-5 bg-white space-y-4 animate-in fade-in duration-150">
+                      {/* 1. Loading State */}
+                      {isLoading && (
+                        <div className="p-6 bg-[#FAF7F0] border border-[#E4DACB] rounded-lg flex items-center justify-center gap-3 text-xs text-[#8B3A1C]">
+                          <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                          <div className="space-y-0.5">
+                            <p className="font-semibold text-sm text-[#2F241A]">
+                              Investigating Section {sec.number}: {sec.title}...
+                            </p>
+                            <p className="text-[11px] text-[#78695A]">
+                              Querying primary epigraphs, geotechnical data, and hydraulic principles for "{displayTitle}".
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        /* Case B: Section does not have bullet subtopics (renders full body text/table/formulas) */
-                        <div className="bg-white border border-[#E4DACB] rounded-md p-3.5 sm:p-4 text-xs sm:text-sm text-[#2E2319] leading-relaxed">
-                          <MarkdownRenderer content={sec.rawContent} />
+                      )}
 
-                          <div className="mt-3 pt-2.5 border-t border-[#EFE7D8] flex items-center justify-between gap-2 text-[11px] text-[#7C6C5C]">
-                            <span className="font-mono text-[10px]">
-                              ~{sec.wordCount} words · Canonical Section #{sec.sectionNumber}
-                            </span>
+                      {/* 2. Error State with Retry */}
+                      {!isLoading && isError && (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-2.5">
+                          <div className="flex items-center gap-2 font-semibold text-amber-800 text-sm">
+                            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span>Research request encountered an error</span>
+                          </div>
+                          <p className="text-xs text-amber-800 leading-relaxed">
+                            {errorSections.get(sec.number) || sec.error || 'Could not retrieve research data for this section.'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => fetchSectionContent(sec.number, sec.title)}
+                            className="px-3.5 py-1.5 bg-[#8B3A1C] hover:bg-[#722E15] text-white rounded font-medium cursor-pointer transition-colors flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Retry Section Research</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 3. Ready State: Detailed Researched Content (200-300 words) */}
+                      {!isLoading && isReady && (
+                        <div className="space-y-4">
+                          {/* Case A: Multiple Subtopics exist */}
+                          {hasSubtopics ? (
+                            <div className="space-y-2.5">
+                              {sec.topics!.map((sub) => {
+                                const isSubOpen = expandedSubtopics.has(sub.id);
+                                return (
+                                  <div
+                                    key={sub.id}
+                                    className="border border-[#E4DACB] rounded-md bg-[#FCFBF8] overflow-hidden transition-all shadow-2xs"
+                                  >
+                                    <div
+                                      onClick={() => toggleSubtopic(sub.id)}
+                                      className={`px-3.5 py-2.5 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors ${
+                                        isSubOpen ? 'bg-[#FAF4EB] border-b border-[#E8DDCC]' : 'hover:bg-[#FAF7F0]'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-[#8B3A1C] font-bold text-xs select-none">
+                                          {isSubOpen ? '▼' : '▶'}
+                                        </span>
+                                        <span className="font-sans font-semibold text-xs sm:text-sm text-[#2C2219] truncate">
+                                          {sub.title}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {isSubOpen && (
+                                      <div className="p-3.5 sm:p-4 text-xs sm:text-sm text-[#30251B] leading-relaxed bg-white">
+                                        <MarkdownRenderer content={sub.content} />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+
+                          {/* Primary 200–300 words Narrative Content */}
+                          <div className="prose prose-stone max-w-none text-xs sm:text-sm text-[#2E2319] leading-relaxed p-3.5 sm:p-4 bg-[#FCFBF8] rounded-lg border border-[#E8DFD1]">
+                            <MarkdownRenderer content={sec.content || ''} />
+                          </div>
+
+                          {/* Verified Source Citations */}
+                          {sec.sources && sec.sources.length > 0 && (
+                            <div className="p-3 rounded-lg bg-[#F7F2E7] border border-[#E5DAC7] space-y-1.5 text-xs">
+                              <span className="font-semibold text-[#8B3A1C] flex items-center gap-1.5 text-[11px]">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Verified Research Citations:
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {sec.sources.map((src, srcIdx) => (
+                                  <a
+                                    key={srcIdx}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white border border-[#DACFBD] text-[#3E3326] text-[11px] hover:text-[#8B3A1C] hover:border-[#8B3A1C] transition-colors"
+                                  >
+                                    <ExternalLink className="w-3 h-3 text-[#8B3A1C]" />
+                                    <span>{src.title || src.url}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Uncertainties & Evidence Limitations Note */}
+                          {sec.limitations && (
+                            <p className="text-[11px] text-[#786959] italic px-1">
+                              <strong>Evidence Note:</strong> {sec.limitations}
+                            </p>
+                          )}
+
+                          {/* Section Action Footer Bar */}
+                          <div className="pt-2.5 border-t border-[#EFE7D8] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#7C6C5C]">
                             <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] bg-[#EAE1D1] px-1.5 py-0.5 rounded text-[#5C4D3E]">
+                                Section #{sec.number}
+                              </span>
+                              <span className="text-[11px]">
+                                Evidence Confidence: <strong>{sec.confidence ? sec.confidence.toUpperCase() : 'HIGH'}</strong>
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end sm:self-center">
+                              {/* Copy Section */}
                               <button
                                 type="button"
-                                onClick={() => handleCopy(`sec-${sec.sectionNumber}`, `## ${sec.sectionNumber}. ${sec.title}\n\n${sec.rawContent}`)}
-                                className="text-[#8B3A1C] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                                onClick={() =>
+                                  handleCopy(
+                                    `sec-${sec.number}`,
+                                    `## ${sec.number}. ${sec.title}\n\n${sec.content}`
+                                  )
+                                }
+                                className="px-2.5 py-1 rounded bg-white hover:bg-[#F8F4EB] text-[#47382B] border border-[#D5CABB] flex items-center gap-1 font-medium transition-colors cursor-pointer text-xs"
                               >
-                                {copiedId === `sec-${sec.sectionNumber}` ? (
+                                {copiedId === `sec-${sec.number}` ? (
                                   <>
                                     <Check className="w-3 h-3 text-emerald-600" />
                                     <span>Copied</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Copy className="w-3 h-3" />
+                                    <Copy className="w-3 h-3 text-[#8B3A1C]" />
                                     <span>Copy Section</span>
                                   </>
                                 )}
                               </button>
+
+                              {/* Discuss Section in Chat (Only this section) */}
                               {onSendToChat && (
                                 <button
                                   type="button"
                                   onClick={() =>
                                     onSendToChat(
-                                      `Regarding Section ${sec.sectionNumber} (${sec.title}):\n\n${sec.rawContent.slice(0, 300)}...\n\nCan you analyze the engineering implications?`
+                                      `Regarding Section ${sec.number} (${sec.title}) for "${displayTitle}":\n\n${(sec.content || '').slice(
+                                        0,
+                                        450
+                                      )}...\n\nCan you analyze the technical civil engineering and historical evidence for this specific topic further?`
                                     )
                                   }
-                                  className="text-[#8B3A1C] hover:underline font-medium cursor-pointer ml-2"
+                                  className="px-3 py-1 rounded bg-[#FAF1E9] hover:bg-[#F3E5D7] text-[#8B3A1C] border border-[#E8D4C8] flex items-center gap-1.5 font-medium transition-colors cursor-pointer text-xs"
+                                  title="Send only this section to chat for specific follow-up questions"
                                 >
-                                  Discuss in Chat →
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Discuss Section in Chat →</span>
                                 </button>
                               )}
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {/* 4. Not Loaded Placeholder (if somehow opened before request starts) */}
+                      {!isLoading && !isReady && !isError && (
+                        <div className="p-5 text-center bg-[#FAF7F0] rounded-lg border border-dashed border-[#DDD2BF] space-y-2">
+                          <p className="text-xs text-[#6F5F4F]">
+                            Detailed research content for Section {sec.number} has not been generated yet.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => fetchSectionContent(sec.number, sec.title)}
+                            className="px-3 py-1.5 bg-[#8B3A1C] text-white rounded text-xs font-semibold cursor-pointer shadow-2xs hover:bg-[#722E15] transition-colors"
+                          >
+                            Investigate Section {sec.number} Now
+                          </button>
                         </div>
                       )}
                     </div>
@@ -706,7 +836,7 @@ export const UniversalResearchExplorer: React.FC<UniversalResearchExplorerProps>
       {viewMode === 'document' && (
         <div className="p-6 bg-white space-y-4">
           <div className="prose prose-stone max-w-none text-[#2D2319] leading-relaxed">
-            <MarkdownRenderer content={content} />
+            <MarkdownRenderer content={fullDocumentMarkdown} />
           </div>
         </div>
       )}

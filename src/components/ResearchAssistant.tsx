@@ -30,6 +30,7 @@ import { HallucinationAuditCard } from './HallucinationAuditCard.tsx';
 import { SourcesDrawer } from './SourcesDrawer.tsx';
 import { VerificationAudit } from '../types/verification.ts';
 import { ResearchSource } from '../types/researchSources.ts';
+import { StructuredResearchReport } from '../types/universalResearch.ts';
 import { SaveToDriveButton } from './SaveToDriveButton.tsx';
 import { exportResearchDossierToDrive } from '../services/googleDriveService.ts';
 import { synthesizeResearchDossier } from '../services/archivalHydrologySynthesizer.ts';
@@ -161,6 +162,7 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
   const [researchSources, setResearchSources] = useState<ResearchSource[]>([]);
   const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
   const [subjectCategory, setSubjectCategory] = useState<string>('');
+  const [structuredReport, setStructuredReport] = useState<StructuredResearchReport | null>(null);
 
   // Authentication & Search History System State
   const [currentUser, setCurrentUser] = useState<JalaSutraUser | null>(null);
@@ -369,6 +371,7 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
     setLoading(true);
     setError(null);
     setResponse(null);
+    setStructuredReport(null);
     setSubjectCategory('');
     setGroundingSources([]);
 
@@ -393,6 +396,9 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
       }
 
       const data = await res.json();
+      if (data.sections && Array.isArray(data.sections)) {
+        setStructuredReport(data);
+      }
       setResponse(data.text);
       if (data.subjectCategory) {
         setSubjectCategory(data.subjectCategory);
@@ -799,11 +805,12 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
 
               {onSendToChat && (
                 <button
-                  onClick={() => onSendToChat(`Regarding this dossier:\n\n${response.substring(0, 300)}...\n\nCan you analyze the specific engineering challenges further?`)}
+                  onClick={() => onSendToChat(`I am researching "${query}" in the 39-section explorer. I have a specific follow-up question regarding this hydraulic subject: `)}
                   className="px-3 py-1 text-xs text-[#4F3F31] bg-[#EAE2D3] hover:bg-[#DFD5C2] rounded flex items-center gap-1.5 transition-colors cursor-pointer border border-[#D5CABB]"
+                  title="Ask a follow-up question in Chat (the 39-section report is explored below)"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-[#8B3A1C]" />
-                  <span>Discuss in Chat</span>
+                  <span>Ask Follow-up in Chat</span>
                 </button>
               )}
 
@@ -845,11 +852,14 @@ export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({
 
           {/* Universal Research Explorer (Interactive Accordion & Digital Encyclopedia) */}
           <UniversalResearchExplorer
+            report={structuredReport}
             content={response}
             subjectTitle={query}
-            subjectCategory={subjectCategory}
+            subjectCategory={subjectCategory || structuredReport?.subjectCategory}
+            subjectType={structuredReport?.subjectType || 'other'}
+            researchId={structuredReport?.id}
             onSendToChat={onSendToChat}
-            onExportToDrive={() => exportResearchDossierToDrive(query, response, groundingSources)}
+            onExportToDrive={() => exportResearchDossierToDrive(query, response || '', groundingSources)}
           />
 
           {/* ── Sources Panel (Grok-style) ──────────────────────────────────── */}
