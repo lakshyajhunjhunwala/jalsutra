@@ -534,56 +534,175 @@ export const StructureSchematic: React.FC<StructureSchematicProps> = ({
   }
 
   // -------------------------------------------------------------
-  // 7. RESERVOIRS, STEPWELLS & TRADITIONAL TANKS
+  // 7. IRRIGATION NETWORKS — Headworks · Main Canal · Distributaries · Field Channels
   // -------------------------------------------------------------
-  const cisternD = Math.max(3.0, values.height || 10.0);
-  const cisternW = Math.max(10.0, values.width || 29.0);
-  const waterDepth = Math.max(0.5, values.upstreamLevel || 7.5);
+  if (activeCategory === 'IRRIGATION_SYSTEMS') {
+    const commandArea = Number(calculationResult?.metrics.find(m => m.label.includes('Command'))?.value) || 5000;
+    const adequacy = Number(calculationResult?.metrics.find(m => m.label.includes('Adequacy'))?.value) || 82;
+    const efficiency = Number(calculationResult?.metrics.find(m => m.label.includes('Efficiency'))?.value) || 75;
+    const duty = Number(calculationResult?.metrics.find(m => m.label.includes('Duty'))?.value) || 860;
 
-  const cx = svgWidth / 2;
-  const tiers = 6;
-  const cisternTopY = 70;
-  const cisternBedY = groundY;
-  const tierHPx = (cisternBedY - cisternTopY) / tiers;
+    const mainCanalY = 145;
+    const mainCanalH = 28;
+    const waterFill = Math.min(mainCanalH - 4, mainCanalH * (adequacy / 100));
 
+    // Branch offsets
+    const branches = [
+      { x: 230, label: 'Branch A' },
+      { x: 400, label: 'Branch B' },
+      { x: 560, label: 'Branch C' },
+    ];
+
+    return (
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
+        {defs}
+        {/* Sky / Crop-field Background */}
+        <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="#EEE8D8" />
+
+        {/* Title */}
+        <text x="22" y="30" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Gravity Canal Irrigation Distribution System
+        </text>
+
+        {/* ── Headworks / Intake Structure ── */}
+        <rect x="30" y={mainCanalY - 24} width="70" height={mainCanalH + 48} fill="url(#dressedMasonry)" stroke="#473E36" strokeWidth="2" rx="3" />
+        <rect x="36" y={mainCanalY - 10} width="58" height={mainCanalH + 20} fill="#1C1814" rx="2" />
+        <text x="65" y={mainCanalY - 30} textAnchor="middle" fill="#3D2C1A" fontSize="9" fontFamily="sans-serif" fontWeight="bold">Headworks</text>
+
+        {/* ── Main Canal (horizontal) ── */}
+        {/* Canal walls */}
+        <rect x="100" y={mainCanalY - 6} width="600" height="6" fill="#9E8B78" stroke="#5C4D3D" strokeWidth="1" />
+        <rect x="100" y={mainCanalY + mainCanalH} width="600" height="6" fill="#9E8B78" stroke="#5C4D3D" strokeWidth="1" />
+        {/* Canal water */}
+        <rect x="100" y={mainCanalY + (mainCanalH - waterFill)} width="600" height={waterFill} fill="url(#schematicWater)" />
+        {/* Flow arrow */}
+        <g stroke="#C8EAF9" strokeWidth="2.5" fill="none">
+          <line x1="120" y1={mainCanalY + mainCanalH / 2} x2="200" y2={mainCanalY + mainCanalH / 2} />
+          <path d={`M185,${mainCanalY + mainCanalH / 2 - 5} L200,${mainCanalY + mainCanalH / 2} L185,${mainCanalY + mainCanalH / 2 + 5}`} />
+        </g>
+        <text x="380" y={mainCanalY + mainCanalH / 2 + 5} textAnchor="middle" fill="#FFFFFF" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+          Main Canal — Q ≈ {(calculationResult?.schematicData?.upstreamDepthM ?? 2.4).toFixed(2)} m³/s
+        </text>
+
+        {/* ── Branch Distributaries (drop channels) ── */}
+        {branches.map((b, i) => {
+          const branchTopY = mainCanalY + mainCanalH + 6;
+          const branchBotY = branchTopY + 55;
+          const fieldRowY = branchBotY + 5;
+          const fieldW = 55;
+          const fieldH = 38;
+          const fOffsets = [-30, 35];
+          return (
+            <g key={i}>
+              {/* Vertical distributary */}
+              <rect x={b.x - 7} y={branchTopY} width="14" height="55" fill="url(#schematicWater)" stroke="#5C9EBF" strokeWidth="1.2" />
+              {/* Distributor label */}
+              <text x={b.x} y={branchTopY + 30} textAnchor="middle" fill="#FFFFFF" fontSize="8" fontFamily="sans-serif" transform={`rotate(-90,${b.x},${branchTopY + 30})`}>{b.label}</text>
+              {/* Horizontal field channels + field rectangles */}
+              {fOffsets.map((fOff, fi) => {
+                const fx = b.x + fOff;
+                return (
+                  <g key={fi}>
+                    <line x1={b.x} y1={branchBotY + 10 + fi * (fieldH + 8)} x2={fx + fieldW / 2} y2={branchBotY + 10 + fi * (fieldH + 8)} stroke="#4FA1CE" strokeWidth="3" />
+                    <rect x={fx} y={branchBotY + 5 + fi * (fieldH + 8)} width={fieldW} height={fieldH} fill="#C3D9B0" stroke="#5A8A3C" strokeWidth="1.5" rx="3" />
+                    <text x={fx + fieldW / 2} y={branchBotY + 20 + fi * (fieldH + 8)} textAnchor="middle" fill="#2D4A1A" fontSize="8" fontFamily="sans-serif">Field</text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
+
+        {/* ── Live Metric Labels (bottom bar) ── */}
+        <rect x="0" y={svgHeight - 38} width={svgWidth} height="38" fill="#8B3A1C" opacity="0.92" rx="0" />
+        <text x="18" y={svgHeight - 20} fill="#FAF4EA" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+          Command Area: {commandArea.toLocaleString()} ha
+        </text>
+        <text x="200" y={svgHeight - 20} fill="#FAF4EA" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+          Adequacy: {adequacy.toFixed(0)}%
+        </text>
+        <text x="340" y={svgHeight - 20} fill="#FAF4EA" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+          Efficiency: {efficiency.toFixed(0)}%
+        </text>
+        <text x="480" y={svgHeight - 20} fill="#FAF4EA" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+          Duty: {duty.toFixed(0)} ha/cumec
+        </text>
+        <text x="18" y={svgHeight - 7} fill="#F0C89A" fontSize="9" fontFamily="sans-serif">
+          {calculationResult?.secondarySummary || 'Delta · Conveyance Loss · Water Productivity metrics below'}
+        </text>
+      </svg>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // 8. RESERVOIRS, STEPWELLS & TRADITIONAL TANKS
+  // -------------------------------------------------------------
+  if (activeCategory === 'RESERVOIRS_TANKS') {
+    const cisternD = Math.max(3.0, values.height || 10.0);
+    const cisternW = Math.max(10.0, values.width || 29.0);
+    const waterDepth = Math.max(0.5, values.upstreamLevel || 7.5);
+    const cx = svgWidth / 2;
+    const tiers = 6;
+    const cisternTopY = 70;
+    const cisternBedY = groundY;
+    const tierHPx = (cisternBedY - cisternTopY) / tiers;
+    void cisternW;
+
+    return (
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
+        {defs}
+        {/* Ground Mass */}
+        <rect x="0" y={cisternTopY} width={svgWidth} height={svgHeight - cisternTopY} fill="#D4C9BA" />
+
+        {/* Stepped Inverted Pyramid Tiers */}
+        {Array.from({ length: tiers }).map((_, idx) => {
+          const tY = cisternTopY + idx * tierHPx;
+          const inset = idx * 28;
+          return (
+            <rect
+              key={idx}
+              x={120 + inset}
+              y={tY}
+              width={svgWidth - 240 - inset * 2}
+              height={tierHPx}
+              fill={idx % 2 === 0 ? '#B8A894' : '#A99884'}
+              stroke="#5C4D3D"
+              strokeWidth="1.2"
+            />
+          );
+        })}
+
+        {/* Impounded Cistern Water Pool */}
+        <path
+          d={`M ${cx - 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} L ${cx - 70} ${cisternBedY} L ${cx + 70} ${cisternBedY} L ${cx + 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} Z`}
+          fill="url(#schematicWater)"
+          stroke="#4FA1CE"
+          strokeWidth="1.5"
+        />
+
+        {/* Annotations */}
+        <text x="25" y="35" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Stepped Cistern Geometry &amp; Evaporation Retention
+        </text>
+        <text x={cx} y={cisternBedY - 15} textAnchor="middle" fill="#FFFFFF" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Water Column Depth: {waterDepth.toFixed(1)} m · Usable Volume: {(calculationResult?.primarySummary || '')}
+        </text>
+      </svg>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Generic fallback — shown when no category matches
+  // -------------------------------------------------------------
   return (
     <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
       {defs}
-      {/* Ground Mass */}
-      <rect x="0" y={cisternTopY} width={svgWidth} height={svgHeight - cisternTopY} fill="#D4C9BA" />
-
-      {/* Stepped Inverted Pyramid Tiers */}
-      {Array.from({ length: tiers }).map((_, idx) => {
-        const tY = cisternTopY + idx * tierHPx;
-        const inset = idx * 28;
-        return (
-          <rect
-            key={idx}
-            x={120 + inset}
-            y={tY}
-            width={svgWidth - 240 - inset * 2}
-            height={tierHPx}
-            fill={idx % 2 === 0 ? '#B8A894' : '#A99884'}
-            stroke="#5C4D3D"
-            strokeWidth="1.2"
-          />
-        );
-      })}
-
-      {/* Impounded Cistern Water Pool */}
-      <path
-        d={`M ${cx - 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} L ${cx - 70} ${cisternBedY} L ${cx + 70} ${cisternBedY} L ${cx + 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} Z`}
-        fill="url(#schematicWater)"
-        stroke="#4FA1CE"
-        strokeWidth="1.5"
-      />
-
-      {/* Annotations */}
-      <text x="25" y="35" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
-        {structure.name} — Stepped Cistern Geometry & Evaporation Retention
+      <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="#EEE8D8" />
+      <text x={svgWidth / 2} y={svgHeight / 2 - 12} textAnchor="middle" fill="#8B3A1C" fontSize="15" fontFamily="serif" fontWeight="bold">
+        Select a structure category above
       </text>
-      <text x={cx} y={cisternBedY - 15} textAnchor="middle" fill="#FFFFFF" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
-        Water Column Depth: {waterDepth.toFixed(1)} m · Usable Volume: {(calculationResult?.primarySummary || '')}
+      <text x={svgWidth / 2} y={svgHeight / 2 + 10} textAnchor="middle" fill="#5D4C3D" fontSize="11" fontFamily="sans-serif">
+        The engineering blueprint will appear here once a category is chosen.
       </text>
     </svg>
   );

@@ -1,3 +1,5 @@
+import { SimulationCategory } from '../services/hydraulics/types.ts';
+
 export type StructureKind =
   | 'DIVERSION_WEIR'
   | 'EMBANKMENT_DAM'
@@ -36,6 +38,7 @@ export interface SimulationStructure {
   name: string;
   alternativeName: string;
   kind: StructureKind;
+  category?: SimulationCategory;
   typeLabel: string;
   location: string;
   civilization: string;
@@ -727,6 +730,78 @@ export function heuristicClassifyStructure(query: string): SimulationStructure {
       documented: {
         height: 'Not documented in local catalog; estimated',
         masonry: 'Stone masonry gravity retaining structure',
+      },
+    };
+  }
+
+  // Irrigation networks, canals, distributaries
+  if (/irrigation|canal system|command area|distributary|paddy field|field channel|karez|aflaj|ayacut|nahr|acequia|naula/.test(q)) {
+    return {
+      ...ANCIENT_SIMULATION_STRUCTURES.find((s) => s.id === 'kallanai')!,
+      id: `irrigation-${Date.now()}`,
+      name: query.trim(),
+      alternativeName: 'AI-Identified Ancient Gravity Canal Irrigation Network',
+      typeLabel: 'Gravity Canal Irrigation Distribution System',
+      kind: 'CANAL',
+      category: 'IRRIGATION_SYSTEMS',
+      location: 'Agricultural Basin (Verify site location)',
+      documented: {
+        canalLength: 'Not documented in local catalog; estimated from regional irrigation networks',
+        commandArea: 'Command area estimated; verify with historical surveys',
+      },
+    };
+  }
+
+  // Drainage, sewerage, culverts, storm drains
+  if (/drain|sewer|culvert|storm drain|stormwater|gutter|mohenjo|corbelled drain|underground drain|covered drain/.test(q)) {
+    return {
+      ...ANCIENT_SIMULATION_STRUCTURES.find((s) => s.id === 'dholavira')!,
+      id: `drainage-${Date.now()}`,
+      name: query.trim(),
+      alternativeName: 'AI-Identified Ancient Urban Drainage System',
+      typeLabel: 'Corbelled Brick Urban Drainage Conduit',
+      kind: 'OTHER_HYDRAULIC_STRUCTURE',
+      category: 'DRAINAGE_SYSTEMS',
+      location: 'Ancient Urban Settlement (Verify site location)',
+      documented: {
+        conduitSpan: 'Not documented in local catalog; estimated from Harappan / Roman precedents',
+        drainageArea: 'Urban catchment drainage system',
+      },
+    };
+  }
+
+  // Flood management, detention basins, bunds, dykes
+  if (/flood|detention basin|flood basin|flood bund|dyke|dike|flood retention|flood plain storage|levee|embankment bund/.test(q)) {
+    return {
+      ...ANCIENT_SIMULATION_STRUCTURES.find((s) => s.id === 'sudarshana')!,
+      id: `flood-${Date.now()}`,
+      name: query.trim(),
+      alternativeName: 'AI-Identified Ancient Flood Management Structure',
+      typeLabel: 'Earthen Flood Detention Basin / Bund',
+      kind: 'EMBANKMENT_DAM',
+      category: 'FLOOD_MANAGEMENT',
+      location: 'Flood Plain Valley (Verify site location)',
+      documented: {
+        basinCapacity: 'Not documented in local catalog; estimated from regional flood hydrology',
+        retentionPeriod: 'Flood detention and controlled release structure',
+      },
+    };
+  }
+
+  // Sluices, gates, outlets, regulators
+  if (/sluice|gate outlet|sluice gate|head regulator|tail regulator|kalingu|bisokotuwa|draw-off|draw off|intake gate|regulating gate/.test(q)) {
+    return {
+      ...ANCIENT_SIMULATION_STRUCTURES.find((s) => s.id === 'kallanai')!,
+      id: `sluice-${Date.now()}`,
+      name: query.trim(),
+      alternativeName: 'AI-Identified Ancient Sluice Gate / Outlet',
+      typeLabel: 'Masonry Sluice Gate Orifice Structure',
+      kind: 'OTHER_HYDRAULIC_STRUCTURE',
+      category: 'SLUICES_OUTLETS',
+      location: 'River / Canal Offtake Point (Verify site location)',
+      documented: {
+        gateWidth: 'Not documented in local catalog; estimated from hydraulic context',
+        operatingHead: 'Low-head sluice outlet or draw-off tower',
       },
     };
   }

@@ -320,7 +320,7 @@ export const DynamicDamSimulator: React.FC = () => {
       setLoadingStage('Calibrating engineering parameters...');
       await new Promise((r) => setTimeout(r, 150));
 
-      const detectedCat = KIND_TO_CATEGORY_MAP[local.kind] || 'DAMS_EMBANKMENTS';
+      const detectedCat = local.category ?? KIND_TO_CATEGORY_MAP[local.kind] ?? 'DAMS_EMBANKMENTS';
       const baseDefaults = { ...CATEGORY_DEFAULT_INPUTS[detectedCat] };
 
       const loadedInputs: HydraulicInputs = {
@@ -360,7 +360,7 @@ export const DynamicDamSimulator: React.FC = () => {
       if (!res.ok) throw new Error('Backend failed to identify');
       const data = await res.json();
       const parsedStructure: SimulationStructure = data.structure;
-      const detectedCat = KIND_TO_CATEGORY_MAP[parsedStructure.kind] || 'DAMS_EMBANKMENTS';
+      const detectedCat = parsedStructure.category ?? KIND_TO_CATEGORY_MAP[parsedStructure.kind] ?? 'DAMS_EMBANKMENTS';
       const baseDefaults = { ...CATEGORY_DEFAULT_INPUTS[detectedCat] };
 
       const loadedInputs: HydraulicInputs = {
@@ -382,7 +382,7 @@ export const DynamicDamSimulator: React.FC = () => {
       showToast(`Identified & Loaded: ${parsedStructure.name}`);
     } catch (err) {
       const fallback = heuristicClassifyStructure(q);
-      const detectedCat = KIND_TO_CATEGORY_MAP[fallback.kind] || 'DAMS_EMBANKMENTS';
+      const detectedCat = fallback.category ?? KIND_TO_CATEGORY_MAP[fallback.kind] ?? 'DAMS_EMBANKMENTS';
       setStructure(fallback);
       setActiveCategory(detectedCat);
       setInputs({ ...CATEGORY_DEFAULT_INPUTS[detectedCat] });
