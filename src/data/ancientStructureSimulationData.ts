@@ -27,6 +27,8 @@ export interface SimulationValues {
   basinLength?: number;
   basinWidth?: number;
   tiers?: number;
+  pipeDiameter?: number;
+  gateOpening?: number;
 }
 
 export interface SimulationStructure {

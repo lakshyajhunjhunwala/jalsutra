@@ -1,47 +1,63 @@
 import React from 'react';
 import { SimulationStructure, SimulationValues } from '../data/ancientStructureSimulationData.ts';
+import { HydraulicCalculationResult, SimulationCategory } from '../services/hydraulics/types.ts';
 
 interface StructureSchematicProps {
+  category?: SimulationCategory;
   structure: SimulationStructure;
   values: SimulationValues;
+  calculationResult?: HydraulicCalculationResult;
 }
 
-export const StructureSchematic: React.FC<StructureSchematicProps> = ({ structure, values }) => {
-  const kind = structure.kind;
+export const StructureSchematic: React.FC<StructureSchematicProps> = ({
+  category,
+  structure,
+  values,
+  calculationResult,
+}) => {
+  // Infer active category if not explicitly provided
+  const activeCategory: SimulationCategory =
+    category ||
+    (structure.kind === 'CANAL'
+      ? 'CHANNELS_CANALS'
+      : structure.kind === 'DIVERSION_WEIR'
+      ? 'DIVERSION_WEIRS'
+      : structure.kind === 'MASONRY_DAM' || structure.kind === 'GRAVITY_DAM' || structure.kind === 'EMBANKMENT_DAM'
+      ? 'DAMS_EMBANKMENTS'
+      : structure.kind === 'RESERVOIR_TANK' || structure.kind === 'STEPWELL'
+      ? 'RESERVOIRS_TANKS'
+      : structure.kind === 'QANAT'
+      ? 'CHANNELS_CANALS'
+      : 'DAMS_EMBANKMENTS');
 
-  // Visual helper calculations
   const svgWidth = 760;
   const svgHeight = 310;
   const groundY = 230;
 
-  // Patterns and Gradients definition
+  // Visual patterns and gradients
   const defs = (
     <defs>
-      {/* Water gradients */}
+      {/* Water Gradients */}
       <linearGradient id="schematicWater" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor="#76B5D7" stopOpacity="0.88" />
         <stop offset="60%" stopColor="#438DB8" stopOpacity="0.94" />
         <stop offset="100%" stopColor="#25597E" stopOpacity="0.98" />
       </linearGradient>
-      <linearGradient id="aquiferGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#6CA6C8" stopOpacity="0.5" />
-        <stop offset="100%" stopColor="#2E6287" stopOpacity="0.75" />
-      </linearGradient>
       <linearGradient id="aeratedWater" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#C9EDFB" stopOpacity="0.9" />
-        <stop offset="100%" stopColor="#5DA0C4" stopOpacity="0.8" />
+        <stop offset="0%" stopColor="#D8F3FE" stopOpacity="0.95" />
+        <stop offset="100%" stopColor="#67B1D8" stopOpacity="0.85" />
+      </linearGradient>
+      <linearGradient id="overtoppingSheet" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#E2F5FE" stopOpacity="0.95" />
+        <stop offset="50%" stopColor="#89CBED" stopOpacity="0.9" />
+        <stop offset="100%" stopColor="#317BA8" stopOpacity="0.95" />
       </linearGradient>
 
-      {/* Masonry block patterns */}
+      {/* Material Patterns */}
       <pattern id="dressedMasonry" width="24" height="14" patternUnits="userSpaceOnUse">
         <rect width="23" height="6.5" fill="#8C8176" stroke="#665D54" strokeWidth="0.6" rx="0.5" />
         <rect x="12" y="7" width="23" height="6.5" fill="#82776C" stroke="#665D54" strokeWidth="0.6" rx="0.5" />
         <rect x="-12" y="7" width="23" height="6.5" fill="#82776C" stroke="#665D54" strokeWidth="0.6" rx="0.5" />
-      </pattern>
-      <pattern id="cyclopeanStone" width="36" height="24" patternUnits="userSpaceOnUse">
-        <rect width="34" height="11" fill="#7D7368" stroke="#524A42" strokeWidth="1" rx="1" />
-        <rect x="18" y="12" width="34" height="11" fill="#73695F" stroke="#524A42" strokeWidth="1" rx="1" />
-        <rect x="-18" y="12" width="34" height="11" fill="#73695F" stroke="#524A42" strokeWidth="1" rx="1" />
       </pattern>
       <pattern id="boulderSand" width="20" height="20" patternUnits="userSpaceOnUse">
         <circle cx="6" cy="6" r="4.5" fill="#695E54" stroke="#4F453C" strokeWidth="0.8" />
@@ -51,19 +67,122 @@ export const StructureSchematic: React.FC<StructureSchematicProps> = ({ structur
       </pattern>
       <pattern id="compactedClay" width="12" height="12" patternUnits="userSpaceOnUse">
         <path d="M0 12 L12 0 M-3 3 L3 -3 M9 15 L15 9" stroke="#9E764B" strokeWidth="1.2" opacity="0.8" />
-        <rect width="12" height="12" fill="#B38758" opacity="0.35" />
+        <rect width="12" height="12" fill="#B38758" opacity="0.4" />
       </pattern>
       <pattern id="earthenRiprap" width="16" height="16" patternUnits="userSpaceOnUse">
         <path d="M0 16 L16 0 M-4 4 L4 -4 M12 20 L20 12" stroke="#8E7761" strokeWidth="1" />
-        <circle cx="8" cy="8" r="2" fill="#6E5C4A" opacity="0.6" />
+        <circle cx="8" cy="8" r="2.5" fill="#6E5C4A" opacity="0.6" />
+      </pattern>
+      <pattern id="corbelledBrick" width="16" height="10" patternUnits="userSpaceOnUse">
+        <rect width="15" height="4.5" fill="#A85741" stroke="#783424" strokeWidth="0.6" rx="0.5" />
+        <rect x="8" y="5" width="15" height="4.5" fill="#984733" stroke="#783424" strokeWidth="0.6" rx="0.5" />
+        <rect x="-8" y="5" width="15" height="4.5" fill="#984733" stroke="#783424" strokeWidth="0.6" rx="0.5" />
       </pattern>
     </defs>
   );
 
   // -------------------------------------------------------------
-  // 1. DIVERSION WEIR / ANICUT (Kallanai / Dujiangyan)
+  // 1. OPEN CHANNELS & CANALS CROSS-SECTION
   // -------------------------------------------------------------
-  if (kind === 'DIVERSION_WEIR') {
+  if (activeCategory === 'CHANNELS_CANALS') {
+    const bankH = Math.max(1.0, values.height || 2.5);
+    const bottomW = Math.max(1.0, values.width || 4.0);
+    const sideZ = Math.max(0, values.slope || 1.5);
+    const flowY = Math.max(0.1, calculationResult?.schematicData.upstreamDepthM ?? values.upstreamLevel ?? 1.5);
+
+    const scale = Math.min(32, 140 / bankH);
+    const bankHPx = bankH * scale;
+    const flowYPx = flowY * scale;
+    const bottomWPx = Math.max(60, Math.min(220, bottomW * scale * 0.7));
+
+    const cx = svgWidth / 2;
+    const bedY = groundY - 20;
+    const bankTopY = bedY - bankHPx;
+    const waterSurfaceY = bedY - flowYPx;
+    const isOvertopping = flowY > bankH;
+
+    const bLeft = cx - bottomWPx / 2;
+    const bRight = cx + bottomWPx / 2;
+    const topSpread = sideZ * bankHPx * 0.7;
+    const bankLeftX = bLeft - topSpread;
+    const bankRightX = bRight + topSpread;
+
+    const waterSpread = sideZ * flowYPx * 0.7;
+    const wLeftX = isOvertopping ? bankLeftX - 40 : bLeft - waterSpread;
+    const wRightX = isOvertopping ? bankRightX + 40 : bRight + waterSpread;
+
+    return (
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
+        {defs}
+        {/* Native Soil Surrounding Canal */}
+        <rect x="0" y={bankTopY} width={svgWidth} height={svgHeight - bankTopY} fill="#D8CEBF" />
+        <line x1="0" y1={bankTopY} x2={svgWidth} y2={bankTopY} stroke="#7D7061" strokeWidth="1.5" />
+
+        {/* Trapezoidal Excavated Canal Cut */}
+        <path
+          d={`M ${bankLeftX - 60} ${bankTopY} L ${bankLeftX} ${bankTopY} L ${bLeft} ${bedY} L ${bRight} ${bedY} L ${bankRightX} ${bankTopY} L ${bankRightX + 60} ${bankTopY} L ${bankRightX + 60} ${svgHeight} L ${bankLeftX - 60} ${svgHeight} Z`}
+          fill="#C4B7A5"
+          stroke="#5C5042"
+          strokeWidth="2"
+        />
+
+        {/* Canal Lining Riprap / Paving */}
+        <path
+          d={`M ${bankLeftX} ${bankTopY} L ${bLeft} ${bedY} L ${bRight} ${bedY} L ${bankRightX} ${bankTopY}`}
+          fill="none"
+          stroke="url(#dressedMasonry)"
+          strokeWidth="10"
+        />
+
+        {/* Flowing Water Body */}
+        <path
+          d={`M ${wLeftX} ${waterSurfaceY} L ${bLeft} ${bedY} L ${bRight} ${bedY} L ${wRightX} ${waterSurfaceY} Z`}
+          fill="url(#schematicWater)"
+          stroke="#4FA1CE"
+          strokeWidth="1.5"
+        />
+
+        {/* Overtopping Spill Sheet if Depth > Bank */}
+        {isOvertopping && (
+          <path
+            d={`M ${bankLeftX - 80} ${waterSurfaceY} L ${bankRightX + 80} ${waterSurfaceY} L ${bankRightX} ${bankTopY} L ${bankLeftX} ${bankTopY} Z`}
+            fill="url(#overtoppingSheet)"
+            stroke="#C0392B"
+            strokeWidth="2"
+            strokeDasharray="4 2"
+          />
+        )}
+
+        {/* Freeboard Vertical Indicator */}
+        {!isOvertopping && (
+          <g stroke="#8B3A1C" strokeWidth="1.2">
+            <line x1={bankRightX + 15} y1={waterSurfaceY} x2={bankRightX + 15} y2={bankTopY} />
+            <line x1={bankRightX + 10} y1={waterSurfaceY} x2={bankRightX + 20} y2={waterSurfaceY} />
+            <line x1={bankRightX + 10} y1={bankTopY} x2={bankRightX + 20} y2={bankTopY} />
+            <text x={bankRightX + 25} y={(waterSurfaceY + bankTopY) / 2 + 4} fill="#8B3A1C" fontSize="10" fontFamily="monospace" fontWeight="bold">
+              FB: {(bankH - flowY).toFixed(2)}m
+            </text>
+          </g>
+        )}
+
+        {/* Dimension Labels */}
+        <text x={cx} y={bedY + 16} textAnchor="middle" fill="#3D3227" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Bed Width b = {bottomW.toFixed(1)} m
+        </text>
+        <text x={cx} y={waterSurfaceY - 8} textAnchor="middle" fill="#1A5276" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Flow Depth y = {flowY.toFixed(2)} m · V = {(calculationResult?.schematicData.waterVelocityMs || 1.2).toFixed(2)} m/s
+        </text>
+        <text x={cx} y={bankTopY - 8} textAnchor="middle" fill="#5D4C3D" fontSize="10" fontFamily="sans-serif">
+          Bank Height H = {bankH.toFixed(2)} m (Side Slope 1:{sideZ.toFixed(1)})
+        </text>
+      </svg>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // 2. DIVERSION WEIR / ANICUT
+  // -------------------------------------------------------------
+  if (activeCategory === 'DIVERSION_WEIRS') {
     const weirHeight = Math.max(1.5, Math.min(6.0, values.height));
     const weirHeightPx = weirHeight * 22;
     const weirTopY = groundY - weirHeightPx;
@@ -85,28 +204,13 @@ export const StructureSchematic: React.FC<StructureSchematicProps> = ({ structur
         <line x1="0" y1={groundY} x2={svgWidth} y2={groundY} stroke="#8C7F72" strokeWidth="2" />
 
         {/* Upstream River Channel Water */}
-        <path
-          d={`M0 ${usWaterY} L${weirLeftX} ${usWaterY} L${weirLeftX} ${groundY} L0 ${groundY} Z`}
-          fill="url(#schematicWater)"
-        />
+        <path d={`M0 ${usWaterY} L${weirLeftX} ${usWaterY} L${weirLeftX} ${groundY} L0 ${groundY} Z`} fill="url(#schematicWater)" />
 
         {/* Downstream Channel Water & Tailwater */}
-        <path
-          d={`M${weirRightX + 60} ${dsWaterY} L${svgWidth} ${dsWaterY} L${svgWidth} ${groundY} L${weirRightX + 60} ${groundY} Z`}
-          fill="url(#schematicWater)"
-        />
+        <path d={`M${weirRightX + 60} ${dsWaterY} L${svgWidth} ${dsWaterY} L${svgWidth} ${groundY} L${weirRightX + 60} ${groundY} Z`} fill="url(#schematicWater)" />
 
-        {/* Chola Sinking Boulders Foundation Bed under Weir */}
-        <rect
-          x={weirLeftX - 35}
-          y={groundY}
-          width={weirWidthPx + 110}
-          height="55"
-          fill="url(#boulderSand)"
-          stroke="#4D4238"
-          strokeWidth="1.5"
-          rx="3"
-        />
+        {/* Sinking Boulders Foundation Bed under Weir */}
+        <rect x={weirLeftX - 35} y={groundY} width={weirWidthPx + 110} height="55" fill="url(#boulderSand)" stroke="#4D4238" strokeWidth="1.5" rx="3" />
 
         {/* Stone Masonry Weir Body with Curved Apron */}
         <path
@@ -143,602 +247,344 @@ export const StructureSchematic: React.FC<StructureSchematicProps> = ({ structur
         {/* Silt Scour Sluice Vent (Kalingu) */}
         <rect x={weirLeftX + 15} y={groundY - 18} width="22" height="18" fill="#1C1814" rx="2" />
         <rect x={weirLeftX + 23} y={groundY - 34} width="6" height="18" fill="#524337" />
-        <path d={`M${weirLeftX + 37} ${groundY - 8} Q${weirLeftX + 70} ${groundY - 5} ${weirRightX + 50} ${groundY - 4}`} fill="none" stroke="#6EB8DB" strokeWidth="4" opacity="0.75" />
 
         {/* Flow Arrows */}
         <g stroke="#E8F4FA" strokeWidth="2.5" fill="none" opacity="0.9">
           <path d="M 60 160 L 130 160 M 120 154 L 130 160 L 120 166" />
-          <path d="M 160 175 L 230 175 M 220 169 L 230 175 L 220 181" />
-          <path d={`M ${weirRightX + 120} ${dsWaterY + 15} L ${weirRightX + 200} ${dsWaterY + 15} M ${weirRightX + 190} ${dsWaterY + 9} L ${weirRightX + 200} ${dsWaterY + 15} L ${weirRightX + 190} ${dsWaterY + 21}`} stroke="#33749C" />
+          <path d={`M ${weirRightX + 70} ${dsWaterY + 15} L ${weirRightX + 140} ${dsWaterY + 15} M ${weirRightX + 130} ${dsWaterY + 9} L ${weirRightX + 140} ${dsWaterY + 15} L ${weirRightX + 130} ${dsWaterY + 21}`} />
         </g>
 
-        {/* Technical Labels */}
-        <text x="35" y={usWaterY - 10} fill="#184869" fontSize="12" fontWeight="bold">Upstream River Approach (Cauvery)</text>
-        <text x="35" y={usWaterY + 16} fill="#1D5378" fontSize="10">Head $H_u$ = {usHead.toFixed(2)}m</text>
-        <text x={weirLeftX - 10} y={weirTopY - 14} fill="#8B3A1C" fontSize="11" fontWeight="bold">Stone Diversion Weir ({weirHeight.toFixed(1)}m Crest)</text>
-        <text x={weirRightX + 75} y={dsWaterY - 12} fill="#1B4969" fontSize="11" fontWeight="bold">Downstream Regulated Flow</text>
-        <text x={weirLeftX - 30} y={groundY + 32} fill="#FDFBFA" fontSize="10" fontWeight="bold">Self-Sinking Boulder Foundation in Sand</text>
-        <text x={weirLeftX + 5} y={groundY + 48} fill="#EBE3DA" fontSize="9">Ancient Chola unmortared alluvial embedment</text>
-        <text x="18" y={groundY + 62} fill="#695D51" fontSize="10">Deep Alluvial Riverbed</text>
-        <text x={weirLeftX + 10} y={groundY - 22} fill="#8B3A1C" fontSize="9" fontWeight="bold">Scour Sluice (*kalingu*)</text>
+        {/* Annotations */}
+        <text x="20" y="30" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Overflow Weir & Hydraulic Jump
+        </text>
+        <text x="20" y={usWaterY - 8} fill="#1D4E75" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Upstream Head H₁ = {usHead.toFixed(2)} m
+        </text>
+        <text x={svgWidth - 180} y={dsWaterY - 8} fill="#1D4E75" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Tailwater H₂ = {dsHead.toFixed(2)} m
+        </text>
       </svg>
     );
   }
 
   // -------------------------------------------------------------
-  // 2. EMBANKMENT DAM (Sudarshana Lake / Marib / Porumamilla)
+  // 3. DAMS & EMBANKMENTS
   // -------------------------------------------------------------
-  if (kind === 'EMBANKMENT_DAM') {
-    const damHeight = Math.max(4, Math.min(24, values.height));
-    const damHeightPx = Math.min(150, damHeight * 9);
-    const crestY = groundY - damHeightPx;
-    const crestWidthPx = Math.max(28, Math.min(80, values.width * 5));
-    const usSlopeRun = Math.max(70, Math.min(180, (values.slope || 2.5) * damHeightPx * 0.45));
-    const dsSlopeRun = Math.max(60, Math.min(160, 2.0 * damHeightPx * 0.42));
+  if (activeCategory === 'DAMS_EMBANKMENTS') {
+    const damH = Math.max(3, values.height || 12);
+    const damHPx = Math.min(150, damH * 10);
+    const damTopY = groundY - damHPx;
+    const crestWPx = Math.max(25, (values.width || 6) * 4);
 
-    const crestCenterX = 380;
-    const crestLeftX = crestCenterX - crestWidthPx / 2;
-    const crestRightX = crestCenterX + crestWidthPx / 2;
-    const usToeX = crestLeftX - usSlopeRun;
-    const dsToeX = crestRightX + dsSlopeRun;
+    const uSlope = Math.max(1.5, values.slope || 2.5);
+    const dSlope = 2.0;
+    const uSpreadPx = damHPx * (uSlope / 1.5);
+    const dSpreadPx = damHPx * (dSlope / 1.5);
 
-    const waterHead = Math.max(0.5, Math.min(damHeight - 0.5, values.upstreamLevel));
-    const waterLevelY = Math.max(crestY + 12, groundY - (waterHead / damHeight) * damHeightPx);
-    const waterContactX = crestLeftX - ((groundY - waterLevelY) / damHeightPx) * usSlopeRun;
+    const damLeftX = 380 - crestWPx / 2 - uSpreadPx;
+    const damCrestLeftX = 380 - crestWPx / 2;
+    const damCrestRightX = 380 + crestWPx / 2;
+    const damRightX = 380 + crestWPx / 2 + dSpreadPx;
 
-    // Clay core geometry
-    const coreTopWidth = crestWidthPx * 0.5;
-    const coreBaseWidth = coreTopWidth + damHeightPx * 0.45;
-    const coreTopLeft = crestCenterX - coreTopWidth / 2;
-    const coreTopRight = crestCenterX + coreTopWidth / 2;
-    const coreBaseLeft = crestCenterX - coreBaseWidth / 2;
-    const coreBaseRight = crestCenterX + coreBaseWidth / 2;
+    const waterH = Math.max(0.5, values.upstreamLevel || 9.5);
+    const waterHPx = Math.min(damHPx + 20, waterH * (damHPx / damH));
+    const waterY = groundY - waterHPx;
+    const isOvertopping = waterH > damH;
 
     return (
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
         {defs}
-        {/* Foundation & Bedrock */}
-        <rect x="0" y={groundY} width={svgWidth} height={svgHeight - groundY} fill="#C9BDAE" />
-        <line x1="0" y1={groundY} x2={svgWidth} y2={groundY} stroke="#7D7063" strokeWidth="2" />
-        {/* Core Cut-off Trench in Bedrock */}
-        <polygon
-          points={`
-            ${coreBaseLeft + 8},${groundY}
-            ${coreBaseLeft + 18},${groundY + 30}
-            ${coreBaseRight - 18},${groundY + 30}
-            ${coreBaseRight - 8},${groundY}
-          `}
-          fill="url(#compactedClay)"
-          stroke="#694B2C"
-          strokeWidth="1.2"
-        />
+        {/* Foundation Stratum */}
+        <rect x="0" y={groundY} width={svgWidth} height={svgHeight - groundY} fill="#D0C4B4" />
+        <line x1="0" y1={groundY} x2={svgWidth} y2={groundY} stroke="#7D7061" strokeWidth="2" />
 
-        {/* Upstream Reservoir Pool */}
-        <polygon
-          points={`0,${waterLevelY} ${waterContactX},${waterLevelY} ${usToeX},${groundY} 0,${groundY}`}
-          fill="url(#schematicWater)"
-        />
+        {/* Upstream Reservoir Water */}
+        <path d={`M 0 ${waterY} L ${damLeftX + (groundY - waterY) * (uSpreadPx / damHPx)} ${waterY} L ${damLeftX} ${groundY} L 0 ${groundY} Z`} fill="url(#schematicWater)" />
 
-        {/* Embankment Body (Outer Shell / Earthen Bund) */}
-        <polygon
-          points={`
-            ${usToeX},${groundY}
-            ${crestLeftX},${crestY}
-            ${crestRightX},${crestY}
-            ${dsToeX},${groundY}
-          `}
-          fill="url(#earthenRiprap)"
-          stroke="#5C4D3E"
-          strokeWidth="2"
-        />
+        {/* Embankment Shoulders */}
+        <path d={`M ${damLeftX} ${groundY} L ${damCrestLeftX} ${damTopY} L ${damCrestRightX} ${damTopY} L ${damRightX} ${groundY} Z`} fill="url(#earthenRiprap)" stroke="#524336" strokeWidth="2" />
 
-        {/* Upstream Stone Pitching (Riprap Protection) */}
+        {/* Impervious Puddle Clay Core (Bhal) */}
         <path
-          d={`M ${usToeX} ${groundY} L ${crestLeftX} ${crestY}`}
-          stroke="url(#dressedMasonry)"
-          strokeWidth="10"
-          strokeLinecap="round"
-        />
-
-        {/* Impervious Central Compacted Clay Core */}
-        <polygon
-          points={`
-            ${coreBaseLeft},${groundY}
-            ${coreTopLeft},${crestY + 10}
-            ${coreTopRight},${crestY + 10}
-            ${coreBaseRight},${groundY}
-          `}
+          d={`M ${380 - crestWPx * 0.7} ${groundY} L ${380 - crestWPx * 0.3} ${damTopY + 10} L ${380 + crestWPx * 0.3} ${damTopY + 10} L ${380 + crestWPx * 0.7} ${groundY} Z`}
           fill="url(#compactedClay)"
-          stroke="#735233"
+          stroke="#7A5328"
           strokeWidth="1.5"
         />
 
-        {/* Downstream Rockfill Toe Drain Filter */}
-        <polygon
-          points={`
-            ${dsToeX - 45},${groundY}
-            ${dsToeX - 25},${groundY - 26}
-            ${dsToeX},${groundY - 4}
-            ${dsToeX},${groundY}
-          `}
-          fill="url(#boulderSand)"
-          stroke="#4D4238"
-          strokeWidth="1.2"
-        />
+        {/* Deep Cutoff Key Trench */}
+        <rect x={380 - 15} y={groundY} width="30" height="28" fill="url(#compactedClay)" stroke="#7A5328" strokeWidth="1.5" />
 
-        {/* Dynamic Phreatic Seepage Line */}
-        <path
-          d={`
-            M ${waterContactX} ${waterLevelY}
-            Q ${coreTopLeft + 10} ${waterLevelY + 8} ${crestCenterX} ${waterLevelY + 28}
-            Q ${coreBaseRight - 5} ${groundY - 20} ${dsToeX - 20} ${groundY - 1}
-          `}
-          fill="none"
-          stroke="#2A6B94"
-          strokeWidth="2.2"
-          strokeDasharray="5 3"
-        />
+        {/* Overtopping Spill Sheet if Modeled */}
+        {isOvertopping && (
+          <path
+            d={`M ${damCrestLeftX - 30} ${waterY} L ${damCrestRightX + 10} ${waterY} L ${damRightX + 40} ${groundY} L ${damRightX} ${groundY} L ${damCrestRightX} ${damTopY} L ${damCrestLeftX} ${damTopY} Z`}
+            fill="url(#overtoppingSheet)"
+            stroke="#C0392B"
+            strokeWidth="2.5"
+            strokeDasharray="5 2"
+          />
+        )}
 
-        {/* Bottom Sluice Conduit (*pranali*) */}
-        <rect x={usToeX + 25} y={groundY - 14} width={dsToeX - usToeX - 35} height="12" fill="#2E241B" rx="1.5" />
-        <rect x={usToeX + 35} y={groundY - 12} width={dsToeX - usToeX - 55} height="8" fill="#478AA8" opacity="0.7" />
-
-        {/* Hydrostatic Pressure Triangular Indicator */}
-        <polygon
-          points={`
-            ${usToeX - 70},${waterLevelY}
-            ${usToeX - 70},${groundY}
-            ${usToeX - 15},${groundY}
-          `}
-          fill="#3B7D9E"
-          opacity="0.25"
-          stroke="#2A6482"
-          strokeWidth="1"
-        />
-        <line x1={usToeX - 70} y1={groundY} x2={usToeX - 15} y2={groundY} stroke="#1F536E" strokeWidth="2" />
-        <text x={usToeX - 68} y={groundY + 15} fill="#1D4E6B" fontSize="9" fontWeight="bold">Hydrostatic Pressure $\frac{1}{2}\rho gh^2$</text>
-
-        {/* Labels */}
-        <text x="25" y={waterLevelY - 10} fill="#184869" fontSize="12" fontWeight="bold">Reservoir Storage Pool</text>
-        <text x="25" y={waterLevelY + 16} fill="#1C5378" fontSize="10">Head: {waterHead.toFixed(1)}m / Freeboard: {(damHeight - waterHead).toFixed(1)}m</text>
-        <text x={crestLeftX - 12} y={crestY - 12} fill="#453424" fontSize="11" fontWeight="bold">Crest ({values.width}m width)</text>
-        <text x={crestCenterX - 20} y={crestY + 36} fill="#FFFBF5" fontSize="10" fontWeight="bold">Clay Core</text>
-        <text x={dsToeX - 60} y={crestY + 55} fill="#275C7E" fontSize="9" fontWeight="bold">Phreatic Seepage Line</text>
-        <text x={dsToeX - 25} y={groundY - 32} fill="#3D3328" fontSize="9">Rock Toe</text>
-        <text x={usToeX + 50} y={groundY - 18} fill="#FFF9F0" fontSize="9">Bottom Sluice Conduit (*pranali*)</text>
-        <text x="35" y={groundY + 28} fill="#695D51" fontSize="10">Bedrock & Cut-off Trench</text>
-      </svg>
-    );
-  }
-
-  // -------------------------------------------------------------
-  // 3. MASONRY / GRAVITY DAM (Bhojpur / Roman Proserpina)
-  // -------------------------------------------------------------
-  if (kind === 'MASONRY_DAM' || kind === 'GRAVITY_DAM') {
-    const damHeight = Math.max(5, Math.min(30, values.height));
-    const damHeightPx = Math.min(170, damHeight * 8.5);
-    const crestY = groundY - damHeightPx;
-    const baseWidthPx = Math.max(60, Math.min(180, (values.width || 8) * 6.5));
-    const crestWidthPx = Math.max(24, baseWidthPx * 0.35);
-
-    const damLeftX = 320;
-    const damRightX = damLeftX + baseWidthPx;
-    const crestRightX = damLeftX + crestWidthPx;
-
-    const waterHead = Math.max(0.5, Math.min(damHeight - 0.5, values.upstreamLevel));
-    const waterLevelY = Math.max(crestY + 10, groundY - (waterHead / damHeight) * damHeightPx);
-
-    const isRoman = structure.id === 'proserpina' || structure.name.toLowerCase().includes('roman');
-
-    return (
-      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
-        {defs}
-        {/* Solid Bedrock with Keyway */}
-        <rect x="0" y={groundY} width={svgWidth} height={svgHeight - groundY} fill="#B8ADA0" />
-        <polygon
-          points={`
-            ${damLeftX + 20},${groundY}
-            ${damLeftX + 35},${groundY + 25}
-            ${damLeftX + 75},${groundY + 25}
-            ${damLeftX + 90},${groundY}
-          `}
-          fill="#786D62"
-          stroke="#4F453B"
-          strokeWidth="1.5"
-        />
-        <line x1="0" y1={groundY} x2={svgWidth} y2={groundY} stroke="#6E6256" strokeWidth="2" />
-
-        {/* Upstream Deep Reservoir Water */}
-        <polygon
-          points={`0,${waterLevelY} ${damLeftX},${waterLevelY} ${damLeftX},${groundY} 0,${groundY}`}
-          fill="url(#schematicWater)"
-        />
-
-        {/* Main Cyclopean Masonry Gravity Wall Body */}
-        <polygon
-          points={`
-            ${damLeftX},${groundY}
-            ${damLeftX},${crestY}
-            ${crestRightX},${crestY}
-            ${damRightX},${groundY}
-          `}
-          fill="url(#cyclopeanStone)"
-          stroke="#473E36"
-          strokeWidth="2.5"
-        />
-
-        {/* Roman External Buttresses (if Proserpina or Roman) */}
-        {isRoman && (
-          <g>
-            <polygon
-              points={`
-                ${damRightX - 35},${groundY}
-                ${crestRightX + 15},${crestY + 35}
-                ${crestRightX + 30},${crestY + 35}
-                ${damRightX},${groundY}
-              `}
-              fill="url(#dressedMasonry)"
-              stroke="#3D342C"
-              strokeWidth="1.5"
-            />
-            <polygon
-              points={`
-                ${damRightX + 10},${groundY}
-                ${crestRightX + 45},${crestY + 55}
-                ${crestRightX + 58},${crestY + 55}
-                ${damRightX + 35},${groundY}
-              `}
-              fill="url(#dressedMasonry)"
-              stroke="#3D342C"
-              strokeWidth="1.5"
-            />
+        {/* Freeboard Indicator */}
+        {!isOvertopping && (
+          <g stroke="#8B3A1C" strokeWidth="1.2">
+            <line x1={damCrestLeftX - 12} y1={waterY} x2={damCrestLeftX - 12} y2={damTopY} />
+            <line x1={damCrestLeftX - 18} y1={waterY} x2={damCrestLeftX - 6} y2={waterY} />
+            <line x1={damCrestLeftX - 18} y1={damTopY} x2={damCrestLeftX - 6} y2={damTopY} />
+            <text x={damCrestLeftX - 22} y={(waterY + damTopY) / 2 + 4} textAnchor="end" fill="#8B3A1C" fontSize="10" fontFamily="monospace" fontWeight="bold">
+              FB: {(damH - waterH).toFixed(2)}m
+            </text>
           </g>
         )}
 
-        {/* Hydrostatic Pressure Distribution Triangle */}
-        <polygon
-          points={`
-            ${damLeftX - 90},${waterLevelY}
-            ${damLeftX - 90},${groundY}
-            ${damLeftX},${groundY}
-          `}
-          fill="#3B7D9E"
-          opacity="0.22"
-          stroke="#2A6482"
-          strokeWidth="1"
-        />
-        {/* Horizontal Force Arrows */}
-        {[0.3, 0.6, 0.9].map((fraction) => {
-          const arrowY = waterLevelY + (groundY - waterLevelY) * fraction;
-          const arrowLength = (fraction * 75);
-          return (
-            <g key={fraction} stroke="#1A5173" strokeWidth="1.8" fill="none">
-              <line x1={damLeftX - arrowLength} y1={arrowY} x2={damLeftX - 3} y2={arrowY} />
-              <polyline points={`${damLeftX - 9},${arrowY - 3} ${damLeftX - 2},${arrowY} ${damLeftX - 9},${arrowY + 3}`} fill="#1A5173" />
-            </g>
-          );
-        })}
-
-        {/* Weight & Resultant Vectors */}
-        <g stroke="#8B3A1C" strokeWidth="2.2" fill="#8B3A1C">
-          <line x1={damLeftX + baseWidthPx * 0.42} y1={crestY + damHeightPx * 0.3} x2={damLeftX + baseWidthPx * 0.42} y2={crestY + damHeightPx * 0.85} />
-          <polygon points={`${damLeftX + baseWidthPx * 0.42 - 4},${crestY + damHeightPx * 0.85 - 2} ${damLeftX + baseWidthPx * 0.42},${crestY + damHeightPx * 0.85 + 7} ${damLeftX + baseWidthPx * 0.42 + 4},${crestY + damHeightPx * 0.85 - 2}`} />
-          <text x={damLeftX + baseWidthPx * 0.42 + 8} y={crestY + damHeightPx * 0.58} fill="#8B3A1C" fontSize="10" fontWeight="bold">Weight $W$</text>
+        {/* Hydrostatic Force Vector Arrow */}
+        <g stroke="#C0392B" strokeWidth="2.5" fill="#C0392B">
+          <line x1={damLeftX - 45} y1={groundY - waterHPx / 3} x2={damLeftX + 15} y2={groundY - waterHPx / 3} />
+          <polygon points={`${damLeftX + 15},${groundY - waterHPx / 3} ${damLeftX},${groundY - waterHPx / 3 - 5} ${damLeftX},${groundY - waterHPx / 3 + 5}`} />
+          <text x={damLeftX - 50} y={groundY - waterHPx / 3 - 8} textAnchor="end" fill="#C0392B" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+            Thrust P = {(calculationResult?.metrics.find((m) => m.symbol === 'P')?.value || '49 MN')}
+          </text>
         </g>
 
-        {/* Sluice / Intake Conduit */}
-        <rect x={damLeftX} y={groundY - 18} width={baseWidthPx} height="14" fill="#241B12" />
-        <rect x={damLeftX + 5} y={groundY - 15} width={baseWidthPx - 10} height="8" fill="#4B90B0" opacity="0.65" />
-
-        {/* Labels */}
-        <text x="30" y={waterLevelY - 12} fill="#184869" fontSize="12" fontWeight="bold">Deep Reservoir Basin</text>
-        <text x="30" y={waterLevelY + 16} fill="#1C5378" fontSize="10">Thrust head: {waterHead.toFixed(1)}m</text>
-        <text x={damLeftX + 15} y={crestY - 10} fill="#3B2E22" fontSize="11" fontWeight="bold">Masonry Gravity Wall ({damHeight.toFixed(0)}m)</text>
-        <text x={damRightX + 15} y={crestY + 65} fill="#4A3F33" fontSize="10">{isRoman ? 'Roman Exterior Buttresses' : 'Stepped Downstream Batter'}</text>
-        <text x={damLeftX + 35} y={groundY + 38} fill="#3D342C" fontSize="9" fontWeight="bold">Foundation Shear Key into Bedrock</text>
-        <text x="25" y={groundY + 28} fill="#6E6256" fontSize="10">Solid Rock Strata</text>
+        {/* Annotations */}
+        <text x="20" y="30" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Embankment Limit Equilibrium
+        </text>
+        <text x="20" y={waterY - 8} fill="#1D4E75" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Reservoir Head H_w = {waterH.toFixed(2)} m
+        </text>
+        <text x={damCrestRightX + 25} y={damTopY - 6} fill="#3D3024" fontSize="10" fontFamily="sans-serif">
+          Crest Height H = {damH.toFixed(1)} m
+        </text>
       </svg>
     );
   }
 
   // -------------------------------------------------------------
-  // 4. RESERVOIR / CISTERN TANK (Dholavira / Sringaverapura)
+  // 4. DRAINAGE & SEWERAGE SYSTEMS
   // -------------------------------------------------------------
-  if (kind === 'RESERVOIR_TANK') {
-    const basinDepth = Math.max(3, Math.min(14, values.basinDepth || values.height));
-    const basinDepthPx = basinDepth * 14;
-    const basinBottomY = Math.min(270, 110 + basinDepthPx);
-    const waterLevel = Math.max(0.5, values.upstreamLevel);
-    const waterY = Math.max(115, basinBottomY - waterLevel * 14);
+  if (activeCategory === 'DRAINAGE_SYSTEMS') {
+    const dVal = Math.max(0.4, values.pipeDiameter || values.height || 1.2);
+    const scale = Math.min(65, 140 / dVal);
+    const dPx = dVal * scale;
+    const cx = svgWidth / 2;
+    const cy = groundY - dPx / 2 - 20;
+
+    const flowDepth = Math.max(0.05, calculationResult?.schematicData.upstreamDepthM ?? values.upstreamLevel ?? 0.6);
+    const flowDPx = Math.min(dPx, flowDepth * scale);
+    const isSurcharged = flowDepth >= dVal;
 
     return (
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
         {defs}
-        {/* Natural Bedrock Terrain */}
-        <rect x="0" y="90" width={svgWidth} height={svgHeight - 90} fill="#C7BAA9" />
+        {/* Ancient Street Pavement Level */}
+        <rect x="0" y={40} width={svgWidth} height={svgHeight - 40} fill="#D4C9BA" />
+        <rect x="0" y={40} width={svgWidth} height="20" fill="url(#dressedMasonry)" />
+        <text x="25" y="32" fill="#3D3227" fontSize="12" fontFamily="serif" fontWeight="bold">
+          Mohenjo-daro / Roman Ancient Urban Street Level
+        </text>
 
-        {/* Excavated Stepped Basin Cutout */}
-        <polygon
-          points={`
-            160,90
-            180,120
-            205,120
-            225,150
-            250,150
-            270,180
-            290,180
-            305,${basinBottomY}
-            580,${basinBottomY}
-            595,180
-            615,180
-            635,150
-            660,150
-            680,120
-            705,120
-            725,90
-            ${svgWidth},90
-            ${svgWidth},${svgHeight}
-            0,${svgHeight}
-            0,90
-          `}
-          fill="#857769"
-        />
+        {/* Vertical Street Access Manhole / Chute */}
+        <rect x={cx - 30} y={60} width="60" height={cy - dPx / 2 - 60} fill="#B5A795" stroke="#635445" strokeWidth="2" />
 
-        {/* Stored Water Pool */}
-        <polygon
-          points={`
-            240,${waterY}
-            305,${basinBottomY}
-            580,${basinBottomY}
-            645,${waterY}
-          `}
-          fill="url(#schematicWater)"
-        />
+        {/* Corbelled Brick Vault Exterior */}
+        <rect x={cx - dPx / 2 - 16} y={cy - dPx / 2 - 16} width={dPx + 32} height={dPx + 32} fill="url(#corbelledBrick)" stroke="#542B20" strokeWidth="2" rx="4" />
 
-        {/* Upstream Desilting Chamber / Inlet Flume */}
-        <rect x="15" y="65" width="130" height="45" fill="url(#dressedMasonry)" stroke="#453B32" strokeWidth="1.5" />
-        <rect x="22" y="72" width="116" height="32" fill="#5892B3" opacity="0.8" />
-        <path d="M 0 85 L 140 85" stroke="#D1EDFB" strokeWidth="3" />
-        <circle cx="50" cy="98" r="2.5" fill="#42352A" />
-        <circle cx="75" cy="100" r="3" fill="#42352A" />
-        <circle cx="105" cy="97" r="2.8" fill="#42352A" />
-        <text x="25" y="60" fill="#8B3A1C" fontSize="10" fontWeight="bold">Inlet Vortex Desilting Chamber</text>
-        <text x="25" y="103" fill="#E8F4FA" fontSize="8">Silt Particles Settling</text>
+        {/* Drain Conduit Void */}
+        <rect x={cx - dPx / 2} y={cy - dPx / 2} width={dPx} height={dPx} fill="#2B241C" stroke="#3D3226" strokeWidth="2" />
 
-        {/* Masonry Steps Lining the Basin */}
-        <path
-          d={`
-            M 160 90 L 180 120 L 205 120 L 225 150 L 250 150 L 270 180 L 290 180 L 305 ${basinBottomY}
-            L 580 ${basinBottomY} L 595 180 L 615 180 L 635 150 L 660 150 L 680 120 L 705 120 L 725 90
-          `}
-          fill="none"
-          stroke="url(#dressedMasonry)"
-          strokeWidth="14"
-          strokeLinejoin="round"
-        />
+        {/* Effluent / Storm Water Flow Level */}
+        <rect x={cx - dPx / 2} y={cy + dPx / 2 - flowDPx} width={dPx} height={flowDPx} fill="url(#schematicWater)" />
 
-        {/* Subterranean Sluice Conduit */}
-        <rect x="575" y={basinBottomY - 14} width="145" height="12" fill="#241B13" rx="2" />
-        <rect x="580" y={basinBottomY - 12} width="135" height="8" fill="#539ABF" opacity="0.75" />
+        {/* Street Ponding Spill if Surcharged */}
+        {isSurcharged && (
+          <g>
+            <rect x={cx - 140} y={40} width="280" height="15" fill="url(#overtoppingSheet)" stroke="#C0392B" strokeWidth="1.5" />
+            <text x={cx} y={28} textAnchor="middle" fill="#C0392B" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+              ⚠️ STREET INUNDATION / BACKWATER SURCHARGE
+            </text>
+          </g>
+        )}
 
-        {/* Labels */}
-        <text x="360" y={waterY - 14} fill="#184869" fontSize="13" fontWeight="bold">Main Retaining Storage Basin</text>
-        <text x="360" y={waterY + 18} fill="#E9F5FB" fontSize="11" fontWeight="bold">Filtered Potable Storage ({waterLevel.toFixed(1)}m Depth)</text>
-        <text x="180" y="185" fill="#3D3227" fontSize="10" fontWeight="bold">31 Stone Access Flights</text>
-        <text x="590" y={basinBottomY - 20} fill="#8B3A1C" fontSize="9" fontWeight="bold">Subterranean Sluice Portal</text>
-        <text x="380" y={basinBottomY + 22} fill="#FBF8F4" fontSize="10">Chiseled Sedimentary Bedrock Terraces</text>
+        {/* Annotations */}
+        <text x={cx + dPx / 2 + 25} y={cy} fill="#1D4E75" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Flow Depth: {flowDepth.toFixed(2)} m
+        </text>
+        <text x={cx + dPx / 2 + 25} y={cy + 18} fill="#695847" fontSize="10" fontFamily="sans-serif">
+          Vault Span: {dVal.toFixed(2)} m
+        </text>
       </svg>
     );
   }
 
   // -------------------------------------------------------------
-  // 5. QANAT (Ancient Persian Qanat of Gonabad / Turpan Karez)
+  // 5. SLUICES, GATES & OUTLETS
   // -------------------------------------------------------------
-  if (kind === 'QANAT') {
-    const slope = Math.max(0.0005, values.slope || 0.0012);
-    const shafts = [100, 210, 320, 430, 540, 640];
+  if (activeCategory === 'SLUICES_OUTLETS') {
+    const hHead = Math.max(1.5, values.upstreamLevel || 4.5);
+    const gateW = Math.max(0.1, values.gateOpening || 0.6);
+    const headwallH = Math.max(hHead + 1.0, values.height || 6.0);
+
+    const scale = 25;
+    const hHeadPx = hHead * scale;
+    const headwallHPx = Math.min(170, headwallH * scale);
+    const wallY = groundY - headwallHPx;
+    const waterY = groundY - hHeadPx;
+
+    const gateOpeningPx = Math.max(12, gateW * scale);
+    const wallLeftX = 330;
+    const wallRightX = 370;
 
     return (
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
         {defs}
-        {/* Mountain Slope & Desert Plain Soil */}
-        <polygon
-          points={`
-            0,70
-            180,105
-            450,155
-            ${svgWidth},195
-            ${svgWidth},${svgHeight}
-            0,${svgHeight}
-          `}
-          fill="#C4B7A6"
-        />
-        <path d={`M 0 70 Q 220 115 ${svgWidth} 195`} stroke="#8C7D6D" strokeWidth="2.5" fill="none" />
+        {/* Bed Level & Foundation */}
+        <rect x="0" y={groundY} width={svgWidth} height={svgHeight - groundY} fill="#D4C9BA" />
+        <line x1="0" y1={groundY} x2={svgWidth} y2={groundY} stroke="#756758" strokeWidth="2" />
 
-        {/* Mountain Foothill Aquifer Water Table */}
-        <polygon
-          points={`
-            0,120
-            160,140
-            400,185
-            ${svgWidth},215
-            ${svgWidth},${svgHeight}
-            0,${svgHeight}
-          `}
-          fill="url(#aquiferGradient)"
-        />
-        <path d={`M 0 120 Q 200 145 ${svgWidth} 215`} stroke="#2B6B91" strokeWidth="2" strokeDasharray="6 3" fill="none" />
+        {/* Upstream Deep Reservoir Water Sump */}
+        <rect x="0" y={waterY} width={wallLeftX} height={groundY - waterY} fill="url(#schematicWater)" />
 
-        {/* Sloping Subterranean Gravity Tunnel Gallery (Kūrah) */}
+        {/* Masonry Sluice Headwall Pier */}
+        <rect x={wallLeftX} y={wallY} width="40" height={headwallHPx} fill="url(#dressedMasonry)" stroke="#4A3F33" strokeWidth="2" />
+
+        {/* Vertical Timber/Iron Sluice Gate Shutter Plate */}
+        <rect x={wallLeftX + 14} y={wallY - 20} width="12" height={headwallHPx - gateOpeningPx} fill="#2E241B" stroke="#120E0A" strokeWidth="1.5" />
+        <rect x={wallLeftX + 18} y={wallY - 45} width="4" height="25" fill="#5E4A38" />
+
+        {/* Sluice Opening Orifice Void */}
+        <rect x={wallLeftX} y={groundY - gateOpeningPx} width="40" height={gateOpeningPx} fill="#14100C" />
+
+        {/* High-Velocity Torricelli Exit Jet */}
         <path
-          d={`M 40 185 C 200 195 450 208 ${svgWidth - 60} 220`}
-          fill="none"
-          stroke="#423428"
-          strokeWidth="28"
-          strokeLinecap="round"
-        />
-        {/* Flowing Water Stream inside Tunnel */}
-        <path
-          d={`M 40 189 C 200 199 450 212 ${svgWidth - 60} 224`}
-          fill="none"
-          stroke="#5EA7CC"
-          strokeWidth="12"
-          strokeLinecap="round"
-        />
-
-        {/* Vertical Shafts (Chāh) with Surface Rings */}
-        {shafts.map((shaftX, index) => {
-          const surfaceY = 70 + (shaftX / svgWidth) * 125;
-          const tunnelY = 185 + (shaftX / svgWidth) * 35;
-          const isMotherWell = index === 0;
-
-          return (
-            <g key={shaftX}>
-              {/* Surface spoil ring collar */}
-              <ellipse cx={shaftX} cy={surfaceY - 2} rx="12" ry="5" fill="#8F7E6D" stroke="#5E4F40" strokeWidth="1.2" />
-              {/* Vertical Shaft */}
-              <line x1={shaftX} y1={surfaceY} x2={shaftX} y2={tunnelY - 10} stroke="#423428" strokeWidth="14" />
-              <line x1={shaftX} y1={surfaceY} x2={shaftX} y2={tunnelY - 10} stroke="#2E231A" strokeWidth="10" />
-              {/* Shaft Label */}
-              <text x={shaftX - 16} y={surfaceY - 12} fill="#5C4533" fontSize="9" fontWeight="bold">
-                {isMotherWell ? 'Mādar-chāh (300m)' : `Shaft #${index + 1}`}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Daylight Outlet (Mazhar) & Surface Canals */}
-        <polygon
-          points={`
-            ${svgWidth - 60},210
-            ${svgWidth},205
-            ${svgWidth},235
-            ${svgWidth - 60},230
-          `}
-          fill="#4D96BC"
-          stroke="#276487"
+          d={`M ${wallRightX} ${groundY - gateOpeningPx} Q ${wallRightX + 80} ${groundY - gateOpeningPx * 0.7} ${wallRightX + 180} ${groundY - 14} L ${wallRightX + 180} ${groundY} L ${wallRightX} ${groundY} Z`}
+          fill="url(#aeratedWater)"
+          stroke="#4CA0CD"
           strokeWidth="1.5"
         />
 
-        {/* Technical Callouts */}
-        <text x="25" y="45" fill="#1A4A6B" fontSize="12" fontWeight="bold">Mountain Alluvial Aquifer (Water Table)</text>
-        <text x="25" y="60" fill="#2E5C7D" fontSize="10">Unconfined mountain recharge zone</text>
-        <text x="260" y="235" fill="#FFFBF5" fontSize="11" fontWeight="bold">Underground Gallery Gradient $S$ = {(slope * 100).toFixed(3)}%</text>
-        <text x={svgWidth - 145} y="180" fill="#1C5378" fontSize="11" fontWeight="bold">Daylight Outlet (*mazhar*)</text>
-        <text x={svgWidth - 145} y="195" fill="#2E658C" fontSize="9">Zero-evaporation desert conveyance</text>
+        {/* Downstream Stilling Pool */}
+        <rect x={wallRightX + 180} y={groundY - 24} width={svgWidth - (wallRightX + 180)} height="24" fill="url(#schematicWater)" opacity="0.85" />
+
+        {/* Jet Velocity Arrow Vector */}
+        <g stroke="#C0392B" strokeWidth="2.5" fill="#C0392B">
+          <line x1={wallRightX + 25} y1={groundY - gateOpeningPx / 2} x2={wallRightX + 110} y2={groundY - gateOpeningPx / 2} />
+          <polygon points={`${wallRightX + 110},${groundY - gateOpeningPx / 2} ${wallRightX + 98},${groundY - gateOpeningPx / 2 - 5} ${wallRightX + 98},${groundY - gateOpeningPx / 2 + 5}`} />
+          <text x={wallRightX + 120} y={groundY - gateOpeningPx / 2 + 4} fill="#C0392B" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+            v = {(calculationResult?.metrics.find((m) => m.symbol === 'V_exit')?.value || '9.6 m/s')}
+          </text>
+        </g>
+
+        {/* Annotations */}
+        <text x="25" y="32" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Scouring Sluice Gate Orifice Efflux
+        </text>
+        <text x="25" y={waterY - 8} fill="#1D4E75" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+          Sump Head H = {hHead.toFixed(2)} m
+        </text>
+        <text x={wallRightX + 15} y={wallY + 15} fill="#5E4E3F" fontSize="10" fontFamily="sans-serif">
+          Gate Aperture w = {gateW.toFixed(2)} m
+        </text>
       </svg>
     );
   }
 
   // -------------------------------------------------------------
-  // 6. STEPWELL (Chand Baori / Rani ki Vav)
+  // 6. FLOOD MANAGEMENT & DETENTION
   // -------------------------------------------------------------
-  if (kind === 'STEPWELL') {
-    const tiers = Math.max(5, Math.min(13, values.tiers || 13));
-    const tierStepY = 160 / tiers;
-    const tierStepX = 140 / tiers;
-
-    const waterY = Math.max(120, 240 - (values.upstreamLevel / 30) * 120);
+  if (activeCategory === 'FLOOD_MANAGEMENT') {
+    const basinD = Math.max(2.0, values.height || 6.0);
+    const peakStage = Math.max(0.5, calculationResult?.schematicData.upstreamDepthM ?? values.upstreamLevel ?? 4.2);
+    const isOvertopping = peakStage > basinD;
 
     return (
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
         {defs}
-        {/* Soil Surroundings */}
-        <rect x="0" y="60" width={svgWidth} height={svgHeight - 60} fill="#BDB09E" />
+        {/* Natural Valley Base */}
+        <rect x="0" y={groundY} width={svgWidth} height={svgHeight - groundY} fill="#D4C9BA" />
 
-        {/* Stepped Inverted Pyramid Cutout */}
-        <polygon
-          points={`
-            60,60
-            ${60 + tiers * tierStepX},${60 + tiers * tierStepY}
-            ${svgWidth - 220 - tiers * tierStepX},${60 + tiers * tierStepY}
-            ${svgWidth - 220},60
-            ${svgWidth},60
-            ${svgWidth},${svgHeight}
-            0,${svgHeight}
-            0,60
-          `}
-          fill="#807262"
+        {/* Flood Retention Basin Sump */}
+        <path
+          d={`M 60 70 L 140 ${groundY} L 620 ${groundY} L 700 70 L 760 70 L 760 ${svgHeight} L 0 ${svgHeight} L 0 70 Z`}
+          fill="#C6B8A5"
+          stroke="#5E5042"
+          strokeWidth="2"
         />
 
-        {/* Deep Water Pool */}
-        <polygon
-          points={`
-            160,${waterY}
-            260,240
-            400,240
-            500,${waterY}
-          `}
+        {/* Flood Water Volume */}
+        <path
+          d={`M 100 ${groundY - (peakStage / basinD) * 140} L 140 ${groundY} L 620 ${groundY} L 660 ${groundY - (peakStage / basinD) * 140} Z`}
           fill="url(#schematicWater)"
         />
 
-        {/* Stepped Tiers (Left Side) */}
-        {Array.from({ length: tiers }).map((_, i) => {
-          const stepX = 60 + i * tierStepX;
-          const stepY = 60 + i * tierStepY;
-          return (
-            <rect
-              key={`left-${i}`}
-              x={stepX}
-              y={stepY}
-              width={tierStepX * 1.5}
-              height={tierStepY}
-              fill="url(#dressedMasonry)"
-              stroke="#4D4236"
-              strokeWidth="0.8"
-            />
-          );
-        })}
+        {/* Emergency Weir Spillway Crest */}
+        <rect x="620" y={groundY - 105} width="60" height="105" fill="url(#dressedMasonry)" stroke="#4A3F33" strokeWidth="1.5" />
 
-        {/* Stepped Tiers (Right Side) */}
-        {Array.from({ length: tiers }).map((_, i) => {
-          const stepX = svgWidth - 220 - (i + 1) * tierStepX;
-          const stepY = 60 + i * tierStepY;
-          return (
-            <rect
-              key={`right-${i}`}
-              x={stepX}
-              y={stepY}
-              width={tierStepX * 1.5}
-              height={tierStepY}
-              fill="url(#dressedMasonry)"
-              stroke="#4D4236"
-              strokeWidth="0.8"
-            />
-          );
-        })}
-
-        {/* Multi-Storey Columned Royal Pavilion (Far Right) */}
-        <g>
-          <rect x={svgWidth - 190} y="60" width="160" height="180" fill="url(#dressedMasonry)" stroke="#4A3D31" strokeWidth="1.5" />
-          {[75, 115, 155, 195].map((archY) => (
-            <g key={archY}>
-              <rect x={svgWidth - 175} y={archY} width="35" height="30" fill="#241B12" rx="4" />
-              <rect x={svgWidth - 125} y={archY} width="35" height="30" fill="#241B12" rx="4" />
-              <rect x={svgWidth - 75} y={archY} width="35" height="30" fill="#241B12" rx="4" />
-            </g>
-          ))}
-          <text x={svgWidth - 165} y="50" fill="#8B3A1C" fontSize="10" fontWeight="bold">Carved Arcaded Pavilions</text>
-        </g>
-
-        {/* Water Table Indicators */}
-        <line x1="0" y1="130" x2={svgWidth - 220} y2="130" stroke="#3782AB" strokeWidth="1.8" strokeDasharray="5 3" />
-        <text x="15" y="125" fill="#1C5578" fontSize="9" fontWeight="bold">Post-Monsoon High Water Level</text>
-        <line x1="0" y1="210" x2={svgWidth - 220} y2="210" stroke="#1D4E6E" strokeWidth="1.8" strokeDasharray="5 3" />
-        <text x="15" y="205" fill="#163F5C" fontSize="9" fontWeight="bold">Dry-Season Summer Water Level</text>
-
-        {/* Labels */}
-        <text x="240" y="45" fill="#2E241B" fontSize="12" fontWeight="bold">Chand Baori 13-Tier Geometric Stairwell</text>
-        <text x="260" y={waterY + 24} fill="#FFFBF5" fontSize="11" fontWeight="bold">Groundwater Sump ({values.upstreamLevel}m depth)</text>
-        <text x="260" y="265" fill="#E8DEC8" fontSize="10">Deep Alluvial Aquifer Direct Infiltration</text>
+        {/* Annotations */}
+        <text x="25" y="32" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+          {structure.name} — Flood Detention Storage Balance
+        </text>
+        <text x="380" y={groundY - 50} textAnchor="middle" fill="#FFFFFF" fontSize="12" fontFamily="sans-serif" fontWeight="bold">
+          Stage: {peakStage.toFixed(2)}m / {basinD.toFixed(1)}m capacity · {(calculationResult?.primarySummary || '')}
+        </text>
       </svg>
     );
   }
 
-  // Fallback schematic
+  // -------------------------------------------------------------
+  // 7. RESERVOIRS, STEPWELLS & TRADITIONAL TANKS
+  // -------------------------------------------------------------
+  const cisternD = Math.max(3.0, values.height || 10.0);
+  const cisternW = Math.max(10.0, values.width || 29.0);
+  const waterDepth = Math.max(0.5, values.upstreamLevel || 7.5);
+
+  const cx = svgWidth / 2;
+  const tiers = 6;
+  const cisternTopY = 70;
+  const cisternBedY = groundY;
+  const tierHPx = (cisternBedY - cisternTopY) / tiers;
+
   return (
-    <div className="p-8 text-center text-xs text-[#7A6D5E]">
-      Visual cross-section generated for {structure.name} ({structure.kind})
-    </div>
+    <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="mx-auto block w-full max-w-[800px] h-auto select-none">
+      {defs}
+      {/* Ground Mass */}
+      <rect x="0" y={cisternTopY} width={svgWidth} height={svgHeight - cisternTopY} fill="#D4C9BA" />
+
+      {/* Stepped Inverted Pyramid Tiers */}
+      {Array.from({ length: tiers }).map((_, idx) => {
+        const tY = cisternTopY + idx * tierHPx;
+        const inset = idx * 28;
+        return (
+          <rect
+            key={idx}
+            x={120 + inset}
+            y={tY}
+            width={svgWidth - 240 - inset * 2}
+            height={tierHPx}
+            fill={idx % 2 === 0 ? '#B8A894' : '#A99884'}
+            stroke="#5C4D3D"
+            strokeWidth="1.2"
+          />
+        );
+      })}
+
+      {/* Impounded Cistern Water Pool */}
+      <path
+        d={`M ${cx - 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} L ${cx - 70} ${cisternBedY} L ${cx + 70} ${cisternBedY} L ${cx + 160} ${cisternBedY - (waterDepth / cisternD) * (cisternBedY - cisternTopY)} Z`}
+        fill="url(#schematicWater)"
+        stroke="#4FA1CE"
+        strokeWidth="1.5"
+      />
+
+      {/* Annotations */}
+      <text x="25" y="35" fill="#241B12" fontSize="13" fontFamily="serif" fontWeight="bold">
+        {structure.name} — Stepped Cistern Geometry & Evaporation Retention
+      </text>
+      <text x={cx} y={cisternBedY - 15} textAnchor="middle" fill="#FFFFFF" fontSize="11" fontFamily="sans-serif" fontWeight="bold">
+        Water Column Depth: {waterDepth.toFixed(1)} m · Usable Volume: {(calculationResult?.primarySummary || '')}
+      </text>
+    </svg>
   );
 };
