@@ -8,3 +8,5 @@ coverage/
 !.env.example
 data/drive_vault.json
 data/drive_vault.json.tmp.*
+data/evidence_documents/
+data/evidence_index.json

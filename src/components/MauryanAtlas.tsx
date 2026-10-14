@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Landmark, Compass, Scroll, FileText, ChevronRight, CheckCircle, Layers, Search } from 'lucide-react';
 import { MAURYAN_LEGAL_HYDRAULIC_CODES, PORUMAMILLA_PRINCIPLES } from '../data/ancientWaterData.ts';
+import { TextbookEvidenceLibrary } from './TextbookEvidenceLibrary.tsx';
 
 interface MauryanAtlasProps {
   onAskResearch: (query: string) => void;
@@ -363,6 +364,9 @@ export const MauryanAtlas: React.FC<MauryanAtlasProps> = ({ onAskResearch }) => 
           )}
         </div>
       </div>
+
+      {/* ── Additional Research Tool: Historical Textbook & Primary Evidence Search ── */}
+      <TextbookEvidenceLibrary />
     </div>
   );
 };

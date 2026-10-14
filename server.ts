@@ -30,6 +30,9 @@ import {
   StructuredResearchReport,
 } from './src/types/universalResearch.ts';
 import { driveDatabase } from './src/services/driveDatabaseService.ts';
+import multer from 'multer';
+import { EvidenceLibraryService } from './src/services/evidenceLibraryService.ts';
+import { EvidenceSearchRequest } from './src/types/evidenceLibrary.ts';
 
 dotenv.config();
 
@@ -69,6 +72,13 @@ const ai = new GoogleGenAI({
       'User-Agent': 'aistudio-build',
     },
   },
+});
+
+// JalaSutra Atlas: Private Textbook & Primary Evidence Library Engine
+const evidenceLibrary = new EvidenceLibraryService(ai);
+const evidenceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
 // High-speed in-memory response cache for instant (<5ms) responses on repeated queries
@@ -967,6 +977,128 @@ app.get('/api/drive/stats', (_req, res) => {
     res.json(stats);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to get database stats' });
+  }
+});
+
+// ── JALASUTRA ATLAS: TEXTBOOK & PRIMARY EVIDENCE SEARCH API ─────────────────
+
+app.post('/api/atlas/evidence/documents', evidenceUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded. Please provide a PDF, DOCX, or TXT file.' });
+    }
+
+    const { title, author, organization, publicationYear, category } = req.body;
+    const doc = await evidenceLibrary.uploadDocument(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      {
+        title,
+        author,
+        organization,
+        publicationYear: publicationYear ? parseInt(publicationYear, 10) : undefined,
+        category,
+      }
+    );
+
+    res.status(201).json(doc);
+  } catch (err: any) {
+    console.error('Error in /api/atlas/evidence/documents upload:', err);
+    res.status(500).json({ error: err.message || 'Failed to upload document' });
+  }
+});
+
+app.get('/api/atlas/evidence/documents', (_req, res) => {
+  try {
+    const docs = evidenceLibrary.listDocuments();
+    res.json(docs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to list documents' });
+  }
+});
+
+app.get('/api/atlas/evidence/documents/:id', (req, res) => {
+  try {
+    const doc = evidenceLibrary.getDocument(req.params.id);
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.json(doc);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to get document' });
+  }
+});
+
+app.get('/api/atlas/evidence/documents/:id/status', (req, res) => {
+  try {
+    const status = evidenceLibrary.getDocumentStatus(req.params.id);
+    if (!status) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.json(status);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to get document status' });
+  }
+});
+
+app.delete('/api/atlas/evidence/documents/:id', (req, res) => {
+  try {
+    const removed = evidenceLibrary.deleteDocument(req.params.id);
+    if (!removed) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.json({ success: true, message: 'Document and search index deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to delete document' });
+  }
+});
+
+app.post('/api/atlas/evidence/search', async (req, res) => {
+  try {
+    const searchReq: EvidenceSearchRequest = req.body;
+    if (!searchReq || !searchReq.query) {
+      return res.status(400).json({ error: 'Query is required for evidence search' });
+    }
+
+    const results = await evidenceLibrary.search(searchReq);
+    res.json(results);
+  } catch (err: any) {
+    console.error('Error in /api/atlas/evidence/search:', err);
+    res.status(500).json({ error: err.message || 'Failed to execute evidence search' });
+  }
+});
+
+app.get('/api/atlas/evidence/documents/:id/pages/:page', (req, res) => {
+  try {
+    const pageNum = parseInt(req.params.page, 10);
+    if (isNaN(pageNum)) {
+      return res.status(400).json({ error: 'Invalid page number' });
+    }
+
+    const pageData = evidenceLibrary.getPage(req.params.id, pageNum);
+    if (!pageData) {
+      return res.status(404).json({ error: 'Page not found for this document' });
+    }
+
+    res.json(pageData);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to get page' });
+  }
+});
+
+app.post('/api/atlas/evidence/explain', async (req, res) => {
+  try {
+    const { query, results } = req.body;
+    if (!query || !Array.isArray(results)) {
+      return res.status(400).json({ error: 'Query and results array are required' });
+    }
+
+    const synthesis = await evidenceLibrary.explainEvidenceWithGemini(query, results);
+    res.json(synthesis);
+  } catch (err: any) {
+    console.error('Error in /api/atlas/evidence/explain:', err);
+    res.status(500).json({ error: err.message || 'Failed to explain evidence with Gemini' });
   }
 });
 
