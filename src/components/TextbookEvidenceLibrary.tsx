@@ -320,15 +320,60 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, query, onOpenPage }) =>
         </div>
       </div>
 
-      {/* Primary Evidence Quotation */}
-      <div className="px-4 py-3 bg-[#FFFFF9] border-b border-[#EDE6D8]">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[#8B3A1C] mb-1 flex items-center gap-1">
-          <span>Literal Extracted Passage:</span>
+      {/* Translation notice if query was cross-lingually translated */}
+      {result.translatedQuery && (
+        <div className="px-4 py-1.5 bg-[#FFF8E6] border-b border-[#F0E0B8] flex items-center gap-1.5 text-[10.5px] text-[#7A5210]">
+          <Sparkles className="w-3 h-3 text-[#B07212] flex-shrink-0" />
+          <span>
+            <strong>Cross-Lingual Search Translation Match:</strong> Query located via historical translation / variant: <code className="bg-white px-1.5 py-0.5 rounded border border-[#E5CE9F] font-semibold text-[#8B3A1C]">"{result.translatedQuery}"</code>
+          </span>
         </div>
-        <p className="font-serif text-[#271E15] leading-relaxed text-[12.5px] italic pl-2 border-l-2 border-[#8B3A1C]">
-          "{highlightMatch(result.matchedText, query)}"
-        </p>
-      </div>
+      )}
+
+      {/* Dual Bilingual Evidence Presentation: Original Ancient Text + English Translation */}
+      {result.originalText && result.englishTranslation ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#EDE6D8] border-b border-[#EDE6D8] bg-[#FFFFF9]">
+          {/* Left Column: Original Primary Text */}
+          <div className="p-4 space-y-2 bg-[#FDFBF7]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#7A3015] flex items-center gap-1">
+                <span>📜 Original Ancient Text</span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[#F5ECE0] text-[#7A3015] border border-[#E5DAC8]">
+                  {result.originalLanguage === 'tamil' ? 'தமிழ் (Tamil)' : result.originalLanguage === 'sanskrit' ? 'संस्कृतम् (Sanskrit)' : 'Original Script'}
+                </span>
+              </span>
+            </div>
+            <div className="font-serif text-[#271E15] leading-relaxed text-[12.5px] whitespace-pre-wrap pl-2.5 border-l-2 border-[#8B3A1C]">
+              {highlightMatch(result.originalText, query)}
+            </div>
+          </div>
+
+          {/* Right Column: English Translation */}
+          <div className="p-4 space-y-2 bg-[#FDFCFA]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#1F5430] flex items-center gap-1">
+                <span>📖 English Scholarly Translation</span>
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-[#EAF5EC] text-[#1F5430] border border-[#CCE8D1]">
+                  Recension / Translation
+                </span>
+              </span>
+            </div>
+            <div className="font-serif text-[#271E15] leading-relaxed text-[12px] whitespace-pre-wrap pl-2.5 border-l-2 border-[#2E6B42]">
+              {highlightMatch(result.englishTranslation, query)}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Single Version Fallback */
+        <div className="px-4 py-3 bg-[#FFFFF9] border-b border-[#EDE6D8]">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#8B3A1C] mb-1 flex items-center gap-1">
+            <span>Literal Extracted Passage:</span>
+          </div>
+          <p className="font-serif text-[#271E15] leading-relaxed text-[12.5px] italic pl-2 border-l-2 border-[#8B3A1C]">
+            "{highlightMatch(result.matchedText, query)}"
+          </p>
+        </div>
+      )}
 
       {/* Expanded Surrounding Passage Context */}
       {expanded && (
@@ -778,21 +823,24 @@ export const TextbookEvidenceLibrary: React.FC = () => {
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <span className="text-[11px] font-semibold text-[#6F5F4E] mr-1">Quick Evidence Terms:</span>
               {[
-                'well spacing',
-                'silt removal',
-                'sluice',
-                'water taxation',
-                "Ashoka's inscriptions",
+                'Bogar 7000 (போகர்)',
+                'Sarvartha Sirpa Chintamani (சிற்ப சிந்தாமணி)',
+                "Kautilya's Arthashastra",
+                'நீரோட்டம் (Water Veins)',
+                'கிணறு (Wells)',
+                'udakabhāga (Water Tax)',
+                'setubheda (Dam Breach)',
+                'மதகு (Sluice)',
                 'soil texture',
-                'irrigation channel',
-                'Pushyagupta',
-                'Tusaspha',
+                'silt removal',
+                'well spacing',
               ].map((term) => (
                 <button
                   key={term}
                   onClick={() => {
-                    setSearchQuery(term);
-                    handleSearch(term);
+                    const cleanTerm = term.replace(/\s*\(.*?\)/, '');
+                    setSearchQuery(cleanTerm);
+                    handleSearch(cleanTerm);
                   }}
                   className="px-2 py-0.5 rounded bg-[#F4ECE1] hover:bg-[#EBE0D2] border border-[#DDD0BC] text-[#554738] text-[11px] transition-colors cursor-pointer"
                 >

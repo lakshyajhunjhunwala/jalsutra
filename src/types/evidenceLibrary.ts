@@ -51,6 +51,9 @@ export interface IndexedPage {
   printedPageLabel?: string;  // printed number as it appears on the page, if detected
   rawText: string;            // exact extracted / OCR text
   ocrConfidence?: number;     // 0–1 if OCR was used
+  originalLanguage?: 'tamil' | 'sanskrit' | 'prakrit' | 'english' | string;
+  originalText?: string;       // authentic primary text in original script (Tamil, Sanskrit, etc.)
+  englishTranslation?: string; // corresponding English scholarly translation
 }
 
 // ── Search request ─────────────────────────────────────────────
@@ -65,6 +68,7 @@ export interface EvidenceSearchRequest {
   pageFrom?: number;
   pageTo?: number;
   maxResults?: number;
+  autoTranslateQuery?: boolean; // automatically translate query between English, Tamil, and Sanskrit
 }
 
 // ── Single search result ───────────────────────────────────────
@@ -83,6 +87,10 @@ export interface EvidenceSearchResult {
   relevanceNote: string;
   ocrDerived: boolean;
   ocrWarning?: string;
+  originalLanguage?: string;   // 'tamil', 'sanskrit', etc.
+  originalText?: string;       // original ancient language text (Tamil/Sanskrit)
+  englishTranslation?: string; // English translation of the passage
+  translatedQuery?: string;    // translation of query used to locate evidence
 }
 
 // ── Upload progress ────────────────────────────────────────────
